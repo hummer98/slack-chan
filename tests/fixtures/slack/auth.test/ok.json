@@ -1,0 +1,16 @@
+{
+  "method": "auth.test",
+  "params": null,
+  "status": 200,
+  "data": {
+    "ok": true,
+    "url": "https://example.test/",
+    "team": "Test Workspace",
+    "user": "test_user",
+    "team_id": "T_TEST_001",
+    "user_id": "U_TEST_001",
+    "bot_id": "B_TEST_001"
+  },
+  "recorded_at": "2026-04-29T00:00:00.000Z",
+  "redacted": true
+}

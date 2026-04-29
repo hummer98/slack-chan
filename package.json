@@ -46,6 +46,8 @@
     "lint": "biome check",
     "format": "biome format --write",
     "typecheck": "tsc --noEmit",
+    "record-fixtures": "bun run scripts/record-fixtures.ts",
+    "redact-fixtures": "bun run scripts/redact-fixtures.ts",
     "prepublishOnly": "bun run typecheck && bun run test && bun run build:js"
   },
   "dependencies": {
