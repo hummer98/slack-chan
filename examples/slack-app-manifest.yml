@@ -1,0 +1,41 @@
+display_information:
+  name: slack-chan
+  description: Slack interface for Claude Code (read / post / dm / search)
+  background_color: "#4A154B"
+features:
+  bot_user:
+    display_name: slack-chan
+    always_online: false
+oauth_config:
+  scopes:
+    bot:
+      - channels:read
+      - channels:history
+      - groups:read
+      - groups:history
+      - im:read
+      - im:history
+      - im:write
+      - chat:write
+      - chat:write.public
+      - files:read
+      - files:write
+      - users:read
+      - users:read.email
+      - users.profile:read
+      - reactions:read
+      - emoji:read
+    user:
+      - search:read
+      - channels:history
+      - groups:history
+      - im:history
+      - chat:write
+      - files:read
+      - files:write
+      - users:read
+      - users.profile:read
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false

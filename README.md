@@ -30,6 +30,20 @@ bun run build:bin        # → dist/slack-chan (single binary, bun --compile)
 ./dist/slack-chan --version
 ```
 
+## Setting up Slack — token をどう取るか
+
+slack-chan を実際の Slack に繋ぐには、Slack App を作成して `xoxp` (User OAuth)
+または `xoxb` (Bot) のトークンを取得する必要があります。手順とテンプレート
+manifest は [`docs/getting-started.md`](docs/getting-started.md) と
+[`examples/slack-app-manifest.yml`](examples/slack-app-manifest.yml) を参照して
+ください。各 scope の意味付きの解説版は
+[`examples/slack-app-manifest.commented.yml`](examples/slack-app-manifest.commented.yml)
+にあります。
+
+> **CLI による token 登録 (`slack-chan config workspace add`) は Phase 2 で
+> 実装予定**です。Phase 1 時点（このリポジトリ）では token 取得手順だけが
+> 整備されており、実際の登録コマンドはまだ動きません。
+
 ## Roadmap
 
 - **Phase 1 (current PR): scaffolding** — `package.json`, `tsconfig.json`,

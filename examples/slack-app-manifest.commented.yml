@@ -1,0 +1,58 @@
+# slack-chan Slack App manifest (解説版)
+#
+# このファイルは「各 scope が何のために必要か」を 1 行コメントで説明した
+# リファレンス用です。Slack の "Create from manifest" UI に貼り付けるなら
+# コメントなしの slack-app-manifest.yml を使ってください (UI が YAML→JSON
+# 変換時にコメントを剥がすため)。
+#
+# 詳しい手順は ../docs/getting-started.md を参照。
+
+display_information:
+  name: slack-chan
+  description: Slack interface for Claude Code (read / post / dm / search)
+  background_color: "#4A154B"
+
+features:
+  bot_user:
+    display_name: slack-chan
+    always_online: false
+
+oauth_config:
+  scopes:
+    # Bot Token (xoxb-...) 用 scope
+    bot:
+      - channels:read          # 公開チャンネルのメタデータを取得 (read / sync)
+      - channels:history       # 公開チャンネルのメッセージ履歴を読む (read)
+      - groups:read            # 招待されているプライベートチャンネルのメタデータを取得 (read)
+      - groups:history         # プライベートチャンネルのメッセージ履歴を読む (read)
+      - im:read                # Bot との 1:1 DM 一覧を取得 (dm --read)
+      - im:history             # Bot との DM 履歴を読む (dm --read)
+      - im:write               # Bot からユーザーへ DM を送る (dm)
+      - chat:write             # チャンネル / DM へメッセージを投稿 (post の中核)
+      - chat:write.public      # Bot が member でない公開チャンネルにも投稿可能 (誤爆防止のため post 側で明示確認推奨)
+      - files:read             # アップロード済みファイルのメタデータと bytes を取得 (download)
+      - files:write            # ファイルをアップロードしてメッセージに添付 (post --file=)
+      - users:read             # ワークスペースのユーザー一覧 / プロフィールを読む (user / mention 解決)
+      - users:read.email       # ユーザーの email を取得 (user --email=、admin 設定により拒否される場合あり)
+      - users.profile:read     # カスタムフィールド含むプロフィールを読む (社内システム連携など特殊フィールドが必要なケース向け)
+      - reactions:read         # メッセージのリアクション情報を読む (read 出力にリアクションを含める、任意)
+      - emoji:read             # ワークスペースのカスタム絵文字一覧を取得 (任意)
+
+    # User OAuth Token (xoxp-...) 用 scope
+    # ⚠️ xoxp はあなた本人として Slack を操作する強権限トークンです。
+    # 投稿は本人として記録され、本人が読める DM もすべて読める。
+    user:
+      - search:read            # search.messages / search.files (xoxp 必須、Bot Token では不可)
+      - channels:history       # 自分が参加する公開チャンネルの履歴を読む
+      - groups:history         # 自分が参加するプライベートチャンネルの履歴を読む
+      - im:history             # 自分が参加する DM の履歴を読む
+      - chat:write             # 本人のアバター / 名前で投稿 (本人として記録される)
+      - files:read             # 自分の閲覧権限内のファイルを取得
+      - files:write            # 本人としてファイルをアップロード
+      - users:read             # ユーザー一覧を読む
+      - users.profile:read     # プロフィールを読む
+
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false

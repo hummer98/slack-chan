@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- (placeholder)
+- examples/slack-app-manifest.yml と docs/getting-started.md を追加 (T021)
 
 ### Changed
 
