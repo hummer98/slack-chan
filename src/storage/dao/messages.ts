@@ -82,3 +82,30 @@ export function updateEdited(
     "UPDATE messages SET text = ?, edited_ts = ? WHERE team_id = ? AND channel_id = ? AND ts = ?",
   ).run(patch.text, patch.edited_ts, team_id, channel_id, ts);
 }
+
+export function get(
+  db: Database,
+  team_id: string,
+  channel_id: string,
+  ts: string,
+): MessageRow | null {
+  const row = db
+    .query<MessageRow, [string, string, string]>(
+      "SELECT * FROM messages WHERE team_id = ? AND channel_id = ? AND ts = ?",
+    )
+    .get(team_id, channel_id, ts);
+  return row ?? null;
+}
+
+/**
+ * Look up a message by ts when the channel is unknown. Returns up to 2 rows
+ * so the caller can detect cache-side ambiguity (Slack itself never reuses a
+ * ts across channels, but the cache can race during partial syncs).
+ */
+export function getByTs(db: Database, team_id: string, ts: string): MessageRow[] {
+  return db
+    .query<MessageRow, [string, string]>(
+      "SELECT * FROM messages WHERE team_id = ? AND ts = ? LIMIT 2",
+    )
+    .all(team_id, ts);
+}

@@ -57,3 +57,16 @@ export function markDownloaded(
     "UPDATE files SET local_path = ?, downloaded_at = ? WHERE team_id = ? AND file_id = ?",
   ).run(local_path, downloaded_at, team_id, file_id);
 }
+
+export function listByMessage(
+  db: Database,
+  team_id: string,
+  channel_id: string,
+  ts: string,
+): FileRow[] {
+  return db
+    .query<FileRow, [string, string, string]>(
+      "SELECT * FROM files WHERE team_id = ? AND channel_id = ? AND ts = ? ORDER BY file_id ASC",
+    )
+    .all(team_id, channel_id, ts);
+}

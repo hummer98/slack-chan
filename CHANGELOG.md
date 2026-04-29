@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - examples/slack-app-manifest.yml と docs/getting-started.md を追加 (T021)
+- `slack-chan download <ts>` 実装: cache hit / Slack history fetch から
+  files を取得して `$XDG_DATA_HOME/slack-chan/files/<team_id>/<file_id>[.<ext>]`
+  に保存 (`--out`, `--force`, `--channel` 対応, T014)
 
 ### Changed
 

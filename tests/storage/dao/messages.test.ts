@@ -147,4 +147,35 @@ describe("dao/messages", () => {
     expect(messages.getAfterTs(db, "T1", "C1", "0").length).toBe(0);
     expect(messages.getAfterTs(db, "T2", "C1", "0").length).toBe(1);
   });
+
+  test("get returns the row when (team_id, channel_id, ts) matches", () => {
+    messages.upsert(db, makeRow({ ts: "1700000000.000100", text: "hit" }));
+    const row = messages.get(db, "T1", "C1", "1700000000.000100");
+    expect(row?.text).toBe("hit");
+    expect(row?.deleted).toBe(0);
+  });
+
+  test("get returns null when no row matches", () => {
+    expect(messages.get(db, "T1", "C1", "9999999999.000000")).toBeNull();
+  });
+
+  test("getByTs returns rows scoped to (team_id, ts) up to LIMIT 2", () => {
+    // Same ts in two different channels — Slack does not actually allow this,
+    // but `getByTs` is the cache fallback used when channel is unknown so we
+    // need to surface the ambiguity (LIMIT 2 lets the caller decide).
+    messages.upsert(db, makeRow({ channel_id: "C1", ts: "1700000000.000100", text: "in-c1" }));
+    messages.upsert(db, makeRow({ channel_id: "C2", ts: "1700000000.000100", text: "in-c2" }));
+    // Different ts, must not show up.
+    messages.upsert(db, makeRow({ channel_id: "C3", ts: "1700000000.000200", text: "other" }));
+    const rows = messages.getByTs(db, "T1", "1700000000.000100");
+    expect(rows.length).toBe(2);
+    const channels = rows.map((r) => r.channel_id).sort();
+    expect(channels).toEqual(["C1", "C2"]);
+  });
+
+  test("getByTs returns one row for a single hit and empty array for miss", () => {
+    messages.upsert(db, makeRow({ channel_id: "C1", ts: "1700000000.000100", text: "only" }));
+    expect(messages.getByTs(db, "T1", "1700000000.000100").length).toBe(1);
+    expect(messages.getByTs(db, "T1", "9999999999.000000")).toEqual([]);
+  });
 });
