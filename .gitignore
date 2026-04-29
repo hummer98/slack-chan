@@ -5,6 +5,7 @@
 
 # cmux-team workspace (local-only orchestration state)
 .team/
+.worktrees/
 
 # Build artifacts
 dist/
