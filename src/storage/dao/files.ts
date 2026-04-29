@@ -35,6 +35,10 @@ export function upsert(db: Database, row: FileRow): void {
   });
 }
 
+export function deleteByTeam(db: Database, team_id: string): void {
+  db.prepare("DELETE FROM files WHERE team_id = ?").run(team_id);
+}
+
 export function get(db: Database, team_id: string, file_id: string): FileRow | null {
   const row = db
     .query<FileRow, [string, string]>("SELECT * FROM files WHERE team_id = ? AND file_id = ?")

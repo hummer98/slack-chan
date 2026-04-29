@@ -7,7 +7,9 @@ import {
   getDefaultWorkspace,
   getOutputFormat,
   removeWorkspace,
+  setDefaultWorkspace,
   setWorkspace,
+  setWorkspaces,
 } from "../../src/config/api.ts";
 import { loadConfig, saveConfig } from "../../src/config/io.ts";
 import type { Config } from "../../src/config/types.ts";
@@ -275,5 +277,105 @@ describe("removeWorkspace", () => {
 
   it("rejects an invalid team_id", async () => {
     expect(removeWorkspace("not-a-team-id", { configDir: dir })).rejects.toThrow();
+  });
+});
+
+describe("setDefaultWorkspace", () => {
+  it("sets default_workspace when the workspace exists", async () => {
+    await saveConfig({ ...baseConfig, default_workspace: null }, { configDir: dir });
+    await setDefaultWorkspace("T02XYZ", { configDir: dir });
+    const cfg = await loadConfig({ configDir: dir });
+    expect(cfg.default_workspace).toBe("T02XYZ");
+  });
+
+  it("throws when the team_id is not registered", async () => {
+    await saveConfig(baseConfig, { configDir: dir });
+    expect(setDefaultWorkspace("T99MISSING", { configDir: dir })).rejects.toThrow(/registered/);
+  });
+
+  it("clears default_workspace when null is passed", async () => {
+    await saveConfig(baseConfig, { configDir: dir });
+    await setDefaultWorkspace(null, { configDir: dir });
+    const cfg = await loadConfig({ configDir: dir });
+    expect(cfg.default_workspace).toBeNull();
+  });
+
+  it("rejects an invalid team_id", async () => {
+    expect(setDefaultWorkspace("not-a-team-id", { configDir: dir })).rejects.toThrow();
+  });
+});
+
+describe("setWorkspaces (bulk)", () => {
+  it("patches multiple workspaces atomically with a single saveConfig call", async () => {
+    await saveConfig(baseConfig, { configDir: dir });
+    await setWorkspaces(
+      {
+        T01ABCDEF: { tokens_store: "file" },
+        T02XYZ: { tokens_store: "keychain" },
+      },
+      { configDir: dir },
+    );
+    const cfg = await loadConfig({ configDir: dir });
+    expect(cfg.workspaces.T01ABCDEF?.tokens_store).toBe("file");
+    expect(cfg.workspaces.T02XYZ?.tokens_store).toBe("keychain");
+    // 既存の name / default_channel は変わらない
+    expect(cfg.workspaces.T01ABCDEF?.name).toBe("Acme");
+    expect(cfg.workspaces.T01ABCDEF?.default_channel).toBe("C0123456");
+  });
+
+  it("matches the final state of multiple setWorkspace calls", async () => {
+    // bulk
+    const bulkDir = await mkdtemp(join(tmpdir(), "slack-chan-api-test-bulk-"));
+    try {
+      await saveConfig(baseConfig, { configDir: bulkDir });
+      await setWorkspaces(
+        {
+          T01ABCDEF: { tokens_store: "file" },
+          T02XYZ: { tokens_store: "keychain" },
+        },
+        { configDir: bulkDir },
+      );
+      const bulkCfg = await loadConfig({ configDir: bulkDir });
+
+      // single-by-single
+      const oneDir = await mkdtemp(join(tmpdir(), "slack-chan-api-test-one-"));
+      try {
+        await saveConfig(baseConfig, { configDir: oneDir });
+        await setWorkspace("T01ABCDEF", { tokens_store: "file" }, { configDir: oneDir });
+        await setWorkspace("T02XYZ", { tokens_store: "keychain" }, { configDir: oneDir });
+        const oneCfg = await loadConfig({ configDir: oneDir });
+
+        expect(bulkCfg.workspaces).toEqual(oneCfg.workspaces);
+        expect(bulkCfg.default_workspace).toBe(oneCfg.default_workspace);
+      } finally {
+        await rm(oneDir, { recursive: true, force: true });
+      }
+    } finally {
+      await rm(bulkDir, { recursive: true, force: true });
+    }
+  });
+
+  it("throws when an unknown team_id is included", async () => {
+    await saveConfig(baseConfig, { configDir: dir });
+    expect(
+      setWorkspaces({ T99MISSING: { tokens_store: "file" } }, { configDir: dir }),
+    ).rejects.toThrow(/registered/);
+  });
+
+  it("rejects an invalid team_id key", async () => {
+    await saveConfig(baseConfig, { configDir: dir });
+    expect(
+      setWorkspaces({ "not-a-team-id": { tokens_store: "file" } }, { configDir: dir }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects an invalid patch field", async () => {
+    await saveConfig(baseConfig, { configDir: dir });
+    expect(
+      setWorkspaces(
+        { T01ABCDEF: { tokens_store: "memory" } as unknown as { tokens_store: "file" } },
+        { configDir: dir },
+      ),
+    ).rejects.toThrow();
   });
 });

@@ -163,6 +163,65 @@ export async function setWorkspace(
 }
 
 /**
+ * Atomically apply a partial patch to one or more existing workspaces.
+ *
+ * Used by `config tokens-store` to flip every workspace's `tokens_store`
+ * in a single `loadConfig + saveConfig` cycle so the on-disk TOML is never
+ * caught half-migrated. Bulk semantics are intentionally separate from
+ * {@link setWorkspace}: this function refuses to create new entries and
+ * raises an error if any team_id in `updates` is unknown.
+ */
+export async function setWorkspaces(
+  updates: Record<string, Partial<WorkspaceConfig>>,
+  opts: ApiOptions = {},
+): Promise<void> {
+  for (const team_id of Object.keys(updates)) {
+    assertValidTeamId(team_id);
+    const patch = updates[team_id];
+    if (patch === undefined) continue;
+    assertPartialWorkspaceConfig(patch);
+  }
+  const cfg = await loadConfig(opts);
+  const nextWorkspaces: Record<string, WorkspaceConfig> = { ...cfg.workspaces };
+  for (const [team_id, patch] of Object.entries(updates)) {
+    const existing = nextWorkspaces[team_id];
+    if (existing === undefined) {
+      throw new Error(`setWorkspaces: ${team_id} is not registered.`);
+    }
+    if (patch === undefined) continue;
+    nextWorkspaces[team_id] = mergeWorkspace(existing, team_id, patch);
+  }
+  const next: Config = {
+    default_workspace: cfg.default_workspace,
+    workspaces: nextWorkspaces,
+    output: { ...cfg.output },
+  };
+  await saveConfig(next, opts);
+}
+
+/**
+ * Set or clear `default_workspace`. The workspace must already exist; passing
+ * `null` clears the default. Env vars are NEVER written back (consistent with
+ * `getDefaultWorkspace`'s read-only env override path).
+ */
+export async function setDefaultWorkspace(
+  team_id: string | null,
+  opts: ApiOptions = {},
+): Promise<void> {
+  if (team_id !== null) assertValidTeamId(team_id);
+  const cfg = await loadConfig(opts);
+  if (team_id !== null && !(team_id in cfg.workspaces)) {
+    throw new Error(`Cannot set default_workspace: ${team_id} is not registered.`);
+  }
+  const next: Config = {
+    default_workspace: team_id,
+    workspaces: { ...cfg.workspaces },
+    output: { ...cfg.output },
+  };
+  await saveConfig(next, opts);
+}
+
+/**
  * Remove a workspace from the saved config (no-op if absent). Resets
  * `default_workspace` to `null` if it pointed at the removed entry.
  *

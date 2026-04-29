@@ -31,6 +31,10 @@ export function upsert(db: Database, row: ChannelRow): void {
   });
 }
 
+export function deleteByTeam(db: Database, team_id: string): void {
+  db.prepare("DELETE FROM channels WHERE team_id = ?").run(team_id);
+}
+
 export function getLastSyncedTs(db: Database, team_id: string, channel_id: string): string | null {
   const row = db
     .query<{ last_synced_ts: string | null }, [string, string]>(

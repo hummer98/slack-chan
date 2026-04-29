@@ -139,4 +139,12 @@ describe("dao/messages", () => {
     expect(rows.length).toBe(1);
     expect(rows[0]?.text).toBeNull();
   });
+
+  test("deleteByTeam removes only the matching team's rows", () => {
+    messages.upsert(db, makeRow({ team_id: "T1", ts: "1700000000.000100", text: "t1" }));
+    messages.upsert(db, makeRow({ team_id: "T2", ts: "1700000000.000100", text: "t2" }));
+    messages.deleteByTeam(db, "T1");
+    expect(messages.getAfterTs(db, "T1", "C1", "0").length).toBe(0);
+    expect(messages.getAfterTs(db, "T2", "C1", "0").length).toBe(1);
+  });
 });

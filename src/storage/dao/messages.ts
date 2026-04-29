@@ -34,6 +34,10 @@ export function upsert(db: Database, row: MessageUpsertInput): void {
   });
 }
 
+export function deleteByTeam(db: Database, team_id: string): void {
+  db.prepare("DELETE FROM messages WHERE team_id = ?").run(team_id);
+}
+
 export interface GetAfterTsOptions {
   limit?: number;
   includeDeleted?: boolean;

@@ -63,4 +63,38 @@ describe("dao/channels", () => {
     expect(row?.topic).toBe("new topic");
     expect(row?.fetched_at).toBe(1700000250);
   });
+
+  test("deleteByTeam removes only the matching team's channels", () => {
+    channels.upsert(db, {
+      team_id: "T1",
+      channel_id: "C1",
+      name: "general",
+      type: "public_channel",
+      topic: null,
+      purpose: null,
+      is_member: 1,
+      last_synced_ts: null,
+      fetched_at: 1700000050,
+    });
+    channels.upsert(db, {
+      team_id: "T2",
+      channel_id: "C1",
+      name: "general",
+      type: "public_channel",
+      topic: null,
+      purpose: null,
+      is_member: 1,
+      last_synced_ts: null,
+      fetched_at: 1700000050,
+    });
+    channels.deleteByTeam(db, "T1");
+    const t1 = db
+      .query<{ n: number }, [string]>("SELECT COUNT(*) AS n FROM channels WHERE team_id = ?")
+      .get("T1");
+    const t2 = db
+      .query<{ n: number }, [string]>("SELECT COUNT(*) AS n FROM channels WHERE team_id = ?")
+      .get("T2");
+    expect(t1?.n).toBe(0);
+    expect(t2?.n).toBe(1);
+  });
 });

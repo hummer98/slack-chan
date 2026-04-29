@@ -1,5 +1,5 @@
 import { apiCmd } from "./api.ts";
-import { configCmd } from "./config.ts";
+import { configCmd } from "./config/index.ts";
 import { dmCmd } from "./dm.ts";
 import { downloadCmd } from "./download.ts";
 import { postCmd } from "./post.ts";

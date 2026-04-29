@@ -44,4 +44,12 @@ describe("dao/users", () => {
   test("get returns null for missing user", () => {
     expect(users.get(db, "T1", "U-missing")).toBeNull();
   });
+
+  test("deleteByTeam removes only the matching team's rows", () => {
+    users.upsert(db, makeUser({ team_id: "T1", user_id: "U1" }));
+    users.upsert(db, makeUser({ team_id: "T2", user_id: "U1" }));
+    users.deleteByTeam(db, "T1");
+    expect(users.get(db, "T1", "U1")).toBeNull();
+    expect(users.get(db, "T2", "U1")).not.toBeNull();
+  });
 });

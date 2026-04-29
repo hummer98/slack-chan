@@ -25,6 +25,10 @@ export function upsert(db: Database, row: UserRow): void {
   });
 }
 
+export function deleteByTeam(db: Database, team_id: string): void {
+  db.prepare("DELETE FROM users WHERE team_id = ?").run(team_id);
+}
+
 export function get(db: Database, team_id: string, user_id: string): UserRow | null {
   const row = db
     .query<UserRow, [string, string]>("SELECT * FROM users WHERE team_id = ? AND user_id = ?")

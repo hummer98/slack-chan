@@ -65,4 +65,12 @@ describe("dao/files", () => {
     expect(row?.downloaded_at).toBe(1700000999);
     expect(row?.raw_json).toBe('{"id":"F1","v":2}');
   });
+
+  test("deleteByTeam removes only the matching team's rows", () => {
+    files.upsert(db, makeFile({ team_id: "T1", file_id: "F1" }));
+    files.upsert(db, makeFile({ team_id: "T2", file_id: "F1" }));
+    files.deleteByTeam(db, "T1");
+    expect(files.get(db, "T1", "F1")).toBeNull();
+    expect(files.get(db, "T2", "F1")).not.toBeNull();
+  });
 });
