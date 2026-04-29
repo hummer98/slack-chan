@@ -1,0 +1,118 @@
+name: Bug report
+description: Report a defect or unexpected behavior in slack-chan.
+title: "[bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill in the sections below.
+
+        **Security note:** if you suspect a vulnerability (token leak, AUP-bypass, RCE, etc.), **do not file a public Issue.** Use the channels in [SECURITY.md](../../SECURITY.md) instead.
+
+  - type: checkboxes
+    id: pre-flight
+    attributes:
+      label: Pre-flight checklist
+      description: Please confirm all of the following before submitting.
+      options:
+        - label: I have searched existing Issues and Discussions and confirmed this is not a duplicate.
+          required: true
+        - label: This Issue does **not** contain any Slack tokens, message bodies, user/channel IDs, email addresses, or other PII (or I have redacted them).
+          required: true
+        - label: This Issue is **not** a security vulnerability. (Vulnerabilities go to SECURITY.md.)
+          required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug. What did you observe?
+      placeholder: e.g. "Running `slack-chan post --channel general` exits with code 1 and prints …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps that let a maintainer reproduce the bug.
+      placeholder: |
+        1. `bun install`
+        2. `slack-chan auth add --workspace foo`
+        3. `slack-chan post --channel general "hi"`
+        4. observe error …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened? Include exit codes and error messages (with secrets redacted).
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        - OS and version (e.g. `macOS 14.5`, `Ubuntu 24.04`)
+        - Bun version (`bun --version`)
+        - slack-chan version (`slack-chan --version`)
+        - Install method (built from source / binary release / npm)
+      value: |
+        - OS:
+        - Bun version:
+        - slack-chan version:
+        - Install method:
+    validations:
+      required: true
+
+  - type: dropdown
+    id: workspace-type
+    attributes:
+      label: Slack workspace type
+      description: Which Slack plan are you using?
+      options:
+        - Free
+        - Pro
+        - Business+
+        - Enterprise Grid
+        - Unknown / not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: token-type
+    attributes:
+      label: Slack token type
+      description: |
+        Which token type were you using?
+
+        Note: slack-chan **intentionally rejects** `xoxc-` and `xoxd-` (browser-session) tokens because they violate Slack's Acceptable Use Policy. If your bug requires those tokens, it is out of scope — see SECURITY.md.
+      options:
+        - "xoxp- (User OAuth)"
+        - "xoxb- (Bot)"
+        - Other supported type
+        - Not applicable (the bug is unrelated to authentication)
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: |
+        Logs, stack traces, screenshots, related issues. **Redact any tokens, message contents, user/channel IDs, or PII** before pasting.
+    validations:
+      required: false

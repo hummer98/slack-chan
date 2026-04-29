@@ -1,0 +1,60 @@
+name: Feature request
+description: Suggest a new capability, command, or behavior for slack-chan.
+title: "[feat] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new feature. Please describe the problem first, the solution second.
+
+        For "how do I…?" questions, use the **Question** template (or Discussions, if available).
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What is the user-facing problem this feature would solve? Why is the status quo painful?
+      placeholder: e.g. "When I post to multiple channels at once, I have to invoke the CLI N times, which …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: A description of the feature. CLI flag shape, configuration, expected output, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you considered and why you rejected them. ("None considered" is a valid answer.)
+    validations:
+      required: false
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope estimate
+      description: Your rough sense of the change size. Maintainers may revise.
+      options:
+        - "Small (single PR, no design doc)"
+        - "Medium (2–3 PRs)"
+        - "Large (likely needs an ADR)"
+        - "Unsure"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Are you willing to contribute a PR?
+      options:
+        - "Yes — I plan to send a PR"
+        - "Maybe — with guidance"
+        - "No — I am only filing the request"
+    validations:
+      required: true

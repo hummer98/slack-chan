@@ -1,0 +1,41 @@
+name: Question / support
+description: Ask a usage question. (Prefer Discussions if available.)
+title: "[question] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Usage questions are best asked in **GitHub Discussions** if it is enabled on this repository. Use this Issue template if Discussions is not available, or if you believe the question reveals a documentation gap.
+
+        For security concerns (token leaks, AUP-bypass, etc.), do **not** post here — see [SECURITY.md](../../SECURITY.md).
+
+  - type: checkboxes
+    id: pre-flight
+    attributes:
+      label: Pre-flight checklist
+      description: Please confirm before submitting.
+      options:
+        - label: I have read the relevant section of the README.
+          required: true
+        - label: I have searched `docs/` (including `docs/seed.md` and `docs/decisions/`).
+          required: true
+        - label: I have searched existing Issues and Discussions for the same question.
+          required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: Be specific. Include what you are trying to do, not just the error.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: |
+        Anything that helps maintainers answer: OS, Bun version, slack-chan version, what you tried so far, links to related Issues. Redact tokens and PII.
+    validations:
+      required: false

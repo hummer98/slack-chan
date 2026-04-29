@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability report
+    url: https://github.com/hummer98/slack-chan/security/advisories/new
+    about: Use GitHub Private Vulnerability Reporting for any security issues. Do not file a public Issue. See SECURITY.md.
+  - name: Discussions / Q&A
+    url: https://github.com/hummer98/slack-chan/discussions
+    about: Ask usage questions and discuss ideas with the community. (If Discussions is disabled on this repository, use the "Question" issue template instead.)
