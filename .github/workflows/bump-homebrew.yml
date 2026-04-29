@@ -1,0 +1,223 @@
+name: Bump Homebrew tap
+
+# Trigger:
+#   - release: published     → 本番。新しい GitHub Release が公開されたら自動で
+#                              hummer98/homebrew-tap に Formula 更新 PR を出す。
+#   - workflow_dispatch:     → 手動。tag を明示すれば過去 release で再実行できる。
+#                              tag を空 + dry_run=true にすると fixture モード
+#                              (homebrew/.test-fixtures/SHA256SUMS を読む) で
+#                              実 release が無い段階でも PR 生成パスを検証できる。
+#
+# Note: peter-evans/create-pull-request は v6 / v7 ともに `dry-run` input を持たない
+# (https://github.com/peter-evans/create-pull-request/blob/v6/action.yml)。
+# よって dry-run モードでは PR 作成 step 自体を `if:` で skip し、生成した
+# Formula の diff を job log に出すだけにとどめる。
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to bump (例: v0.1.0)。空かつ dry_run=true なら fixture モード'
+        type: string
+        default: ''
+      dry_run:
+        description: 'true なら PR 作成 step を skip し、Formula の diff だけ job log に表示する'
+        type: boolean
+        default: true
+
+permissions:
+  # GITHUB_TOKEN は本 repo の release artifact を gh CLI で読むだけなので read で十分。
+  # tap repo への push は HOMEBREW_TAP_TOKEN (Fine-grained PAT) を使う。
+  contents: read
+
+concurrency:
+  group: bump-homebrew
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: bump-homebrew
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout slack-chan
+        uses: actions/checkout@v4
+
+      - name: Resolve tag / version / mode
+        id: ctx
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          # release trigger なら release.tag_name、workflow_dispatch なら inputs.tag を採用。
+          tag="${RELEASE_TAG:-}"
+          if [[ -z "$tag" ]]; then
+            tag="${INPUT_TAG:-}"
+          fi
+
+          # is_dry: workflow_dispatch + inputs.dry_run==true のときだけ true。
+          # release: published のときは常に false (本番 PR を作る)。
+          if [[ "$EVENT_NAME" == "workflow_dispatch" && "${INPUT_DRY_RUN:-false}" == "true" ]]; then
+            is_dry=true
+          else
+            is_dry=false
+          fi
+
+          fixture_mode=false
+          if [[ -z "$tag" ]]; then
+            if [[ "$is_dry" == "true" ]]; then
+              fixture_mode=true
+              version="0.0.0-fixture"
+              tag="v${version}"
+              echo "::notice::fixture mode — using homebrew/.test-fixtures/SHA256SUMS (no real release required)"
+            else
+              echo "::error::tag が指定されていません。release trigger でない場合は inputs.tag を指定してください。"
+              exit 1
+            fi
+          else
+            version="${tag#v}"
+          fi
+
+          {
+            echo "tag=${tag}"
+            echo "version=${version}"
+            echo "is_dry=${is_dry}"
+            echo "fixture_mode=${fixture_mode}"
+          } >> "$GITHUB_OUTPUT"
+          echo "resolved: tag=${tag} version=${version} is_dry=${is_dry} fixture_mode=${fixture_mode}"
+
+      - name: Fetch SHA256SUMS (real release)
+        if: steps.ctx.outputs.fixture_mode != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.ctx.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          gh release download "$TAG" --pattern 'SHA256SUMS' -D dist/
+          echo "----- dist/SHA256SUMS -----"
+          cat dist/SHA256SUMS
+          echo "---------------------------"
+
+      - name: Use fixture SHA256SUMS (dry-run with no tag)
+        if: steps.ctx.outputs.fixture_mode == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp homebrew/.test-fixtures/SHA256SUMS dist/SHA256SUMS
+          echo "----- fixture dist/SHA256SUMS -----"
+          cat dist/SHA256SUMS
+          echo "-----------------------------------"
+
+      - name: Extract per-target sha256
+        run: |
+          set -euo pipefail
+          extract() {
+            local suffix="$1"
+            awk -v s="-bun-${suffix}" '$2 ~ s"$" {print $1}' dist/SHA256SUMS
+          }
+          sha_darwin_arm64=$(extract darwin-arm64)
+          sha_darwin_x64=$(extract darwin-x64)
+          sha_linux_arm64=$(extract linux-arm64)
+          sha_linux_x64=$(extract linux-x64)
+
+          for var in sha_darwin_arm64 sha_darwin_x64 sha_linux_arm64 sha_linux_x64; do
+            val="${!var}"
+            if [[ -z "$val" ]]; then
+              echo "::error::${var} を SHA256SUMS から抽出できませんでした"
+              exit 1
+            fi
+            if [[ ${#val} -ne 64 ]]; then
+              echo "::error::${var} の長さが 64 ではありません: len=${#val} value=${val}"
+              exit 1
+            fi
+          done
+
+          {
+            echo "SHA256_DARWIN_ARM64=${sha_darwin_arm64}"
+            echo "SHA256_DARWIN_X64=${sha_darwin_x64}"
+            echo "SHA256_LINUX_ARM64=${sha_linux_arm64}"
+            echo "SHA256_LINUX_X64=${sha_linux_x64}"
+          } >> "$GITHUB_ENV"
+
+      - name: Checkout homebrew-tap
+        id: checkout_tap
+        # fixture モード時は tap repo が無くても続行できるよう continue-on-error。
+        # 本番 (release-published / 明示 tag) は失敗させて気づけるようにする。
+        continue-on-error: ${{ steps.ctx.outputs.fixture_mode == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          repository: hummer98/homebrew-tap
+          path: homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Ensure tap workdir exists (fixture fallback)
+        if: steps.ctx.outputs.fixture_mode == 'true' && steps.checkout_tap.outcome != 'success'
+        run: |
+          set -euo pipefail
+          echo "::warning::tap repo を checkout できませんでした (fixture モード)。空ディレクトリで Formula 生成のみ検証します。"
+          rm -rf homebrew-tap
+          mkdir -p homebrew-tap/Formula
+
+      - name: Render Formula from template
+        env:
+          VERSION: ${{ steps.ctx.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p homebrew-tap/Formula
+          # envsubst の展開対象を ${VERSION} と 4 つの ${SHA256_*} に限定する。
+          # Formula 内 Ruby の #{version} や $LOAD_PATH 等は触らせない。
+          # shellcheck disable=SC2016 # envsubst の引数は意図的にシングルクォート
+          envsubst '${VERSION} ${SHA256_DARWIN_ARM64} ${SHA256_DARWIN_X64} ${SHA256_LINUX_ARM64} ${SHA256_LINUX_X64}' \
+            < homebrew/slack-chan.rb.tmpl \
+            > homebrew-tap/Formula/slack-chan.rb
+          echo "----- rendered Formula/slack-chan.rb -----"
+          cat homebrew-tap/Formula/slack-chan.rb
+          echo "------------------------------------------"
+
+      - name: Show dry-run diff (skip PR creation)
+        if: steps.ctx.outputs.is_dry == 'true'
+        run: |
+          set -euo pipefail
+          if [[ -d homebrew-tap/.git ]]; then
+            git -C homebrew-tap status --short || true
+            echo "----- diff -----"
+            git -C homebrew-tap --no-pager diff -- Formula/slack-chan.rb || true
+            echo "----------------"
+          else
+            echo "homebrew-tap is not a git checkout (fixture fallback). Showing rendered Formula only."
+          fi
+          echo "::notice::dry-run completed — peter-evans/create-pull-request was NOT invoked"
+
+      - name: Create Pull Request
+        if: steps.ctx.outputs.is_dry != 'true' && steps.checkout_tap.outcome == 'success'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          path: homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          branch: bump/slack-chan-${{ steps.ctx.outputs.version }}
+          base: main
+          commit-message: |
+            chore: bump slack-chan to ${{ steps.ctx.outputs.version }}
+          title: 'chore: bump slack-chan to ${{ steps.ctx.outputs.version }}'
+          body: |
+            Auto-generated by `slack-chan` repo `bump-homebrew.yml`.
+
+            - version: `${{ steps.ctx.outputs.version }}`
+            - tag:     `${{ steps.ctx.outputs.tag }}`
+            - release: https://github.com/hummer98/slack-chan/releases/tag/${{ steps.ctx.outputs.tag }}
+
+            #### sha256
+
+            | target        | sha256 |
+            | ------------- | ------ |
+            | darwin-arm64  | `${{ env.SHA256_DARWIN_ARM64 }}` |
+            | darwin-x64    | `${{ env.SHA256_DARWIN_X64 }}` |
+            | linux-arm64   | `${{ env.SHA256_LINUX_ARM64 }}` |
+            | linux-x64     | `${{ env.SHA256_LINUX_X64 }}` |
+
+            Merge は手動 (auto-merge は仕掛けない)。
+          delete-branch: true

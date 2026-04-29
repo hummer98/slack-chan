@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - examples/slack-app-manifest.yml と docs/getting-started.md を追加 (T021)
+- Homebrew tap auto-bump workflow + Formula template (`brew install hummer98/tap/slack-chan`) (T022)
 
 ### Changed
 
