@@ -62,3 +62,31 @@ export function getByName(db: Database, team_id: string, name: string): ChannelR
     .get(team_id, name);
   return row ?? null;
 }
+
+export function countByTeam(
+  db: Database,
+  team_id: string,
+  opts: { is_member?: 0 | 1 } = {},
+): number {
+  if (opts.is_member === undefined) {
+    const row = db
+      .query<{ n: number }, [string]>("SELECT COUNT(*) AS n FROM channels WHERE team_id = ?")
+      .get(team_id);
+    return row?.n ?? 0;
+  }
+  const row = db
+    .query<{ n: number }, [string, number]>(
+      "SELECT COUNT(*) AS n FROM channels WHERE team_id = ? AND is_member = ?",
+    )
+    .get(team_id, opts.is_member);
+  return row?.n ?? 0;
+}
+
+export function maxLastSyncedTs(db: Database, team_id: string): string | null {
+  const row = db
+    .query<{ m: string | null }, [string]>(
+      "SELECT MAX(last_synced_ts) AS m FROM channels WHERE team_id = ?",
+    )
+    .get(team_id);
+  return row?.m ?? null;
+}

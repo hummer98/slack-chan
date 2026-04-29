@@ -5,8 +5,8 @@ import { downloadCmd } from "./download/index.ts";
 import { postCmd } from "./post/index.ts";
 import { readCmd } from "./read/index.ts";
 import { searchCmd } from "./search/index.ts";
-import { statsCmd } from "./stats.ts";
-import { syncCmd } from "./sync.ts";
+import { statsCmd } from "./stats/index.ts";
+import { syncCmd } from "./sync/index.ts";
 import { userCmd } from "./user/index.ts";
 
 export const COMMANDS = Object.freeze({

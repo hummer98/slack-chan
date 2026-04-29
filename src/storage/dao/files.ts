@@ -58,6 +58,13 @@ export function markDownloaded(
   ).run(local_path, downloaded_at, team_id, file_id);
 }
 
+export function countByTeam(db: Database, team_id: string): number {
+  const row = db
+    .query<{ n: number }, [string]>("SELECT COUNT(*) AS n FROM files WHERE team_id = ?")
+    .get(team_id);
+  return row?.n ?? 0;
+}
+
 export function listByMessage(
   db: Database,
   team_id: string,

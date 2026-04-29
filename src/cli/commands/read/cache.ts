@@ -19,6 +19,13 @@ export interface SyncOptions {
   logger: Logger;
 }
 
+export interface SyncStats {
+  upserted: number;
+  deletedMarked: number;
+  revived: number;
+  lastSyncedTs: string | null;
+}
+
 interface ApiMessage {
   ts?: string;
   thread_ts?: string;
@@ -111,7 +118,7 @@ function dispatchSlackError(method: string, slackErr: string): never {
   throw new TransientError(`read: ${method} returned not-ok (${slackErr}).`);
 }
 
-export async function syncChannelHistory(opts: SyncOptions): Promise<void> {
+export async function syncChannelHistory(opts: SyncOptions): Promise<SyncStats> {
   const { team_id, channel_id, mode, cache_window_days, client, db, now, logger } = opts;
 
   // 1. mode から fetch oldest と delete-scan oldest を決定。
@@ -153,6 +160,8 @@ export async function syncChannelHistory(opts: SyncOptions): Promise<void> {
   const upsertedTsList: string[] = [];
   let cursor: string | undefined;
   let upsertCount = 0;
+  let revivedCount = 0;
+  let deletedMarkedCount = 0;
   do {
     const params: Parameters<typeof client.conversationsHistory>[0] = {
       channel: channel_id,
@@ -184,6 +193,7 @@ export async function syncChannelHistory(opts: SyncOptions): Promise<void> {
       // M1 / §4.5 / §13.14: API で生存確認できた行は markAlive で deleted=0 に戻す。
       if (existing !== null && existing.deleted === 1) {
         messagesDao.markAlive(db, team_id, channel_id, ts);
+        revivedCount++;
       }
       upsertedTsList.push(ts);
       upsertCount++;
@@ -197,6 +207,7 @@ export async function syncChannelHistory(opts: SyncOptions): Promise<void> {
   for (const row of deleteScan) {
     if (!seenTsInWindow.has(row.ts) && row.deleted === 0) {
       messagesDao.markDeleted(db, team_id, channel_id, row.ts);
+      deletedMarkedCount++;
     }
   }
 
@@ -220,4 +231,11 @@ export async function syncChannelHistory(opts: SyncOptions): Promise<void> {
   }
 
   logger.debug(`read.cache: synced ${upsertCount} messages, mode=${mode}`);
+
+  return {
+    upserted: upsertCount,
+    deletedMarked: deletedMarkedCount,
+    revived: revivedCount,
+    lastSyncedTs: channelsDao.getLastSyncedTs(db, team_id, channel_id),
+  };
 }

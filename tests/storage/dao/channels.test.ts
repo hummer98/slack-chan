@@ -165,6 +165,114 @@ describe("dao/channels", () => {
     expect(channels.getOne(db, "T1", "C-missing")).toBeNull();
   });
 
+  test("(e) countByTeam: 0 件 / N 件 / is_member フィルタ / 別 team_id 除外", () => {
+    expect(channels.countByTeam(db, "T1")).toBe(0);
+
+    channels.upsert(db, {
+      team_id: "T1",
+      channel_id: "C1",
+      name: "a",
+      type: null,
+      topic: null,
+      purpose: null,
+      is_member: 1,
+      last_synced_ts: null,
+      fetched_at: 1700000000,
+    });
+    channels.upsert(db, {
+      team_id: "T1",
+      channel_id: "C2",
+      name: "b",
+      type: null,
+      topic: null,
+      purpose: null,
+      is_member: 0,
+      last_synced_ts: null,
+      fetched_at: 1700000000,
+    });
+    channels.upsert(db, {
+      team_id: "T1",
+      channel_id: "C3",
+      name: "c",
+      type: null,
+      topic: null,
+      purpose: null,
+      is_member: null,
+      last_synced_ts: null,
+      fetched_at: 1700000000,
+    });
+    channels.upsert(db, {
+      team_id: "T2",
+      channel_id: "C9",
+      name: "z",
+      type: null,
+      topic: null,
+      purpose: null,
+      is_member: 1,
+      last_synced_ts: null,
+      fetched_at: 1700000000,
+    });
+
+    expect(channels.countByTeam(db, "T1")).toBe(3);
+    expect(channels.countByTeam(db, "T1", { is_member: 1 })).toBe(1);
+    expect(channels.countByTeam(db, "T1", { is_member: 0 })).toBe(1);
+    expect(channels.countByTeam(db, "T2")).toBe(1);
+    expect(channels.countByTeam(db, "T_other")).toBe(0);
+  });
+
+  test("(f) maxLastSyncedTs: null only / 複数行から MAX / 別 team_id 除外", () => {
+    expect(channels.maxLastSyncedTs(db, "T1")).toBeNull();
+
+    channels.upsert(db, {
+      team_id: "T1",
+      channel_id: "C1",
+      name: "a",
+      type: null,
+      topic: null,
+      purpose: null,
+      is_member: null,
+      last_synced_ts: null,
+      fetched_at: 1700000000,
+    });
+    expect(channels.maxLastSyncedTs(db, "T1")).toBeNull();
+
+    channels.upsert(db, {
+      team_id: "T1",
+      channel_id: "C2",
+      name: "b",
+      type: null,
+      topic: null,
+      purpose: null,
+      is_member: null,
+      last_synced_ts: "1700000000.000100",
+      fetched_at: 1700000000,
+    });
+    channels.upsert(db, {
+      team_id: "T1",
+      channel_id: "C3",
+      name: "c",
+      type: null,
+      topic: null,
+      purpose: null,
+      is_member: null,
+      last_synced_ts: "1700000050.000200",
+      fetched_at: 1700000050,
+    });
+    channels.upsert(db, {
+      team_id: "T2",
+      channel_id: "C9",
+      name: "z",
+      type: null,
+      topic: null,
+      purpose: null,
+      is_member: null,
+      last_synced_ts: "9999999999.999999",
+      fetched_at: 1700000000,
+    });
+    expect(channels.maxLastSyncedTs(db, "T1")).toBe("1700000050.000200");
+    expect(channels.maxLastSyncedTs(db, "T2")).toBe("9999999999.999999");
+  });
+
   test("deleteByTeam removes only the matching team's channels", () => {
     channels.upsert(db, {
       team_id: "T1",

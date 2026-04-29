@@ -30,7 +30,7 @@ describe("dispatch", () => {
     stdoutSpy = null;
   });
 
-  it("(1) dispatch('read') → 1 (stub)", async () => {
+  it("(1) dispatch('read') → 1 (UserError: --workspace required)", async () => {
     const code = await dispatch("read", makeCtx());
     expect(code).toBe(1);
   });
@@ -54,8 +54,10 @@ describe("dispatch", () => {
     }
   });
 
-  it("(5) all 10 stubs return EXIT_USER_ERROR (1)", async () => {
-    for (const name of COMMAND_NAMES) {
+  it("(5) commands return EXIT_USER_ERROR (1) when invoked with empty ctx (missing args / stub)", async () => {
+    // stats は引数なしでも全 workspace を列挙できる正規の使い方なので例外。
+    const expectsUserError = COMMAND_NAMES.filter((n) => n !== "stats");
+    for (const name of expectsUserError) {
       const code = await dispatch(name, makeCtx());
       expect(code).toBe(1);
     }

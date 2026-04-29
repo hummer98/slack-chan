@@ -325,7 +325,7 @@ describe("syncChannelHistory", () => {
       ],
       response_metadata: { next_cursor: "" },
     }));
-    await syncChannelHistory({
+    const stats = await syncChannelHistory({
       ...baseSyncOpts,
       mode: "incremental",
       client: newClient(),
@@ -333,6 +333,7 @@ describe("syncChannelHistory", () => {
       now: () => 1700000300,
     });
     expect(messagesDao.get(db, "T1", "C1", "1700000000.000100")?.deleted).toBe(0);
+    expect(stats.revived).toBe(1);
   });
 
   it("(7) refresh: oldest='0' + 全 cache が delete-scan 対象", async () => {
@@ -442,6 +443,45 @@ describe("syncChannelHistory", () => {
       expect(err).toBeInstanceOf(TransientError);
       expect((err as Error).message).toContain("conversations.history failed");
     }
+  });
+
+  it("(12) returns SyncStats with upserted/deletedMarked/revived/lastSyncedTs", async () => {
+    // 既存 deleted=1 row 1 件と alive な row 1 件 を seed
+    seedMsg(db, "1700000000.000100", { text: "old-deleted" });
+    messagesDao.markDeleted(db, "T1", "C1", "1700000000.000100");
+    seedMsg(db, "1700000000.000200", { text: "stale-alive" });
+    channelsDao.upsert(db, {
+      team_id: "T1",
+      channel_id: "C1",
+      name: null,
+      type: null,
+      topic: null,
+      purpose: null,
+      is_member: null,
+      last_synced_ts: "1700000000.000200",
+      fetched_at: 1700000000,
+    });
+
+    // API: 既存 deleted=1 と新規 1 件を返す（古い alive 1 件は API 未観測 → markDeleted）
+    mockApi(async () => ({
+      ok: true,
+      messages: [
+        { ts: "1700000000.000100", text: "revived", user: "U1", type: "message" },
+        { ts: "1700000000.000300", text: "fresh", user: "U1", type: "message" },
+      ],
+      response_metadata: { next_cursor: "" },
+    }));
+    const stats = await syncChannelHistory({
+      ...baseSyncOpts,
+      mode: "refresh",
+      client: newClient(),
+      db,
+      now: () => 1700000400,
+    });
+    expect(stats.upserted).toBe(2);
+    expect(stats.revived).toBe(1);
+    expect(stats.deletedMarked).toBe(1);
+    expect(stats.lastSyncedTs).toBe("1700000000.000300");
   });
 
   it("(11) ratelimited → TransientError", async () => {

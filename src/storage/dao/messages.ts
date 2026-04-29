@@ -183,6 +183,25 @@ export function getThread(
     .all(team_id, channel_id, parent_ts, parent_ts);
 }
 
+export function countByTeam(
+  db: Database,
+  team_id: string,
+  opts: { includeDeleted?: boolean } = {},
+): number {
+  if (opts.includeDeleted === true) {
+    const row = db
+      .query<{ n: number }, [string]>("SELECT COUNT(*) AS n FROM messages WHERE team_id = ?")
+      .get(team_id);
+    return row?.n ?? 0;
+  }
+  const row = db
+    .query<{ n: number }, [string]>(
+      "SELECT COUNT(*) AS n FROM messages WHERE team_id = ? AND deleted = 0",
+    )
+    .get(team_id);
+  return row?.n ?? 0;
+}
+
 export function markAlive(db: Database, team_id: string, channel_id: string, ts: string): void {
   db.prepare(
     "UPDATE messages SET deleted = 0 WHERE team_id = ? AND channel_id = ? AND ts = ? AND deleted = 1",

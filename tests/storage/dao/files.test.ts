@@ -86,4 +86,16 @@ describe("dao/files", () => {
   test("listByMessage returns empty array when nothing matches", () => {
     expect(files.listByMessage(db, "T1", "C1", "1700000000.000100")).toEqual([]);
   });
+
+  test("countByTeam returns count and isolates teams", () => {
+    expect(files.countByTeam(db, "T1")).toBe(0);
+
+    files.upsert(db, makeFile({ team_id: "T1", file_id: "F1" }));
+    files.upsert(db, makeFile({ team_id: "T1", file_id: "F2" }));
+    files.upsert(db, makeFile({ team_id: "T2", file_id: "F1" }));
+
+    expect(files.countByTeam(db, "T1")).toBe(2);
+    expect(files.countByTeam(db, "T2")).toBe(1);
+    expect(files.countByTeam(db, "T_other")).toBe(0);
+  });
 });

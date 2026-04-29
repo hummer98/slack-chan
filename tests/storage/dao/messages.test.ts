@@ -266,4 +266,20 @@ describe("dao/messages", () => {
     messages.markAlive(db, "T1", "C1", "1700000000.000100");
     expect(messages.get(db, "T1", "C1", "1700000000.000100")?.deleted).toBe(0);
   });
+
+  test("(h) countByTeam: default は alive only / includeDeleted=true で全件 / 別 team 除外", () => {
+    expect(messages.countByTeam(db, "T1")).toBe(0);
+    expect(messages.countByTeam(db, "T1", { includeDeleted: true })).toBe(0);
+
+    messages.upsert(db, makeRow({ ts: "1700000000.000100", text: "a" }));
+    messages.upsert(db, makeRow({ ts: "1700000000.000200", text: "b" }));
+    messages.upsert(db, makeRow({ ts: "1700000000.000300", text: "c" }));
+    messages.upsert(db, makeRow({ team_id: "T2", ts: "1700000000.000400", text: "z" }));
+    messages.markDeleted(db, "T1", "C1", "1700000000.000200");
+
+    expect(messages.countByTeam(db, "T1")).toBe(2);
+    expect(messages.countByTeam(db, "T1", { includeDeleted: true })).toBe(3);
+    expect(messages.countByTeam(db, "T2")).toBe(1);
+    expect(messages.countByTeam(db, "T_other")).toBe(0);
+  });
 });
