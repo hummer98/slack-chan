@@ -89,6 +89,18 @@ describe("runCli integration", () => {
     expect(err).not.toContain("xoxb-1234-5678-abcdefghij");
     expect(err).toMatch(/xoxb-\*\*\*/);
   });
+
+  it("(9) post (no args) → exit 1 + 'missing <channel>'", async () => {
+    const code = await runCli(["post"]);
+    expect(code).toBe(1);
+    expect(stderr()).toContain("missing <channel>");
+  });
+
+  it("(10) post C123 hi --blocks=[] --file=/tmp/x → exit 1 + 'mutually exclusive'", async () => {
+    const code = await runCli(["post", "C0123ABCDEF", "hi", "--blocks=[]", "--file=/tmp/x"]);
+    expect(code).toBe(1);
+    expect(stderr()).toContain("mutually exclusive");
+  });
 });
 
 describe("installGlobalHandlers", () => {

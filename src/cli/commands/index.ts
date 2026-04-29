@@ -2,7 +2,7 @@ import { apiCmd } from "./api.ts";
 import { configCmd } from "./config/index.ts";
 import { dmCmd } from "./dm.ts";
 import { downloadCmd } from "./download.ts";
-import { postCmd } from "./post.ts";
+import { postCmd } from "./post/index.ts";
 import { readCmd } from "./read.ts";
 import { searchCmd } from "./search.ts";
 import { statsCmd } from "./stats.ts";
