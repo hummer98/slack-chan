@@ -4,7 +4,7 @@ import { dmCmd } from "./dm/index.ts";
 import { downloadCmd } from "./download/index.ts";
 import { postCmd } from "./post/index.ts";
 import { readCmd } from "./read/index.ts";
-import { searchCmd } from "./search.ts";
+import { searchCmd } from "./search/index.ts";
 import { statsCmd } from "./stats.ts";
 import { syncCmd } from "./sync.ts";
 import { userCmd } from "./user/index.ts";
