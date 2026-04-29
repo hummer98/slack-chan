@@ -8,6 +8,7 @@ import {
   type FilesUploadV2Arguments,
   type SearchMessagesArguments,
   type UsersInfoArguments,
+  type UsersListArguments,
   type UsersLookupByEmailArguments,
   type WebAPICallResult,
   WebClient,
@@ -76,6 +77,8 @@ export class SlackClient {
   filesUploadV2 = (args: FilesUploadV2Arguments) => this.client.filesUploadV2(args);
 
   usersInfo = (args: UsersInfoArguments) => this.client.users.info(args);
+
+  usersList = (args?: UsersListArguments) => this.client.users.list(args ?? {});
 
   usersLookupByEmail = (args: UsersLookupByEmailArguments) => this.client.users.lookupByEmail(args);
 

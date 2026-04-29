@@ -35,3 +35,28 @@ export function get(db: Database, team_id: string, user_id: string): UserRow | n
     .get(team_id, user_id);
   return row ?? null;
 }
+
+export function findByName(db: Database, team_id: string, name: string): UserRow | null {
+  const row = db
+    .query<UserRow, [string, string]>(
+      "SELECT * FROM users WHERE team_id = ? AND LOWER(name) = LOWER(?) LIMIT 1",
+    )
+    .get(team_id, name);
+  return row ?? null;
+}
+
+export function findByEmail(db: Database, team_id: string, email: string): UserRow | null {
+  const row = db
+    .query<UserRow, [string, string]>(
+      "SELECT * FROM users WHERE team_id = ? AND LOWER(email) = LOWER(?) LIMIT 1",
+    )
+    .get(team_id, email);
+  return row ?? null;
+}
+
+export function count(db: Database, team_id: string): number {
+  const row = db
+    .query<{ n: number }, [string]>("SELECT COUNT(*) AS n FROM users WHERE team_id = ?")
+    .get(team_id);
+  return row?.n ?? 0;
+}

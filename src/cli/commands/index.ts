@@ -7,7 +7,7 @@ import { readCmd } from "./read/index.ts";
 import { searchCmd } from "./search.ts";
 import { statsCmd } from "./stats.ts";
 import { syncCmd } from "./sync.ts";
-import { userCmd } from "./user.ts";
+import { userCmd } from "./user/index.ts";
 
 export const COMMANDS = Object.freeze({
   config: configCmd,
