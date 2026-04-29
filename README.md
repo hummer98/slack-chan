@@ -1,5 +1,8 @@
 # slack-chan
 
+[![CI](https://github.com/hummer98/slack-chan/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hummer98/slack-chan/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Slack interface for Claude — multi-workspace, default channels, persistent
 local cache. Designed to be invoked by Claude Code via a Bash skill so the
 agent can read context from Slack and post reports back without manual

@@ -22,3 +22,6 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+
+# npm lockfile residue (we use bun.lock; npm tooling sometimes drops this)
+package-lock.json
