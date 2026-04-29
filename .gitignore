@@ -1,0 +1,22 @@
+# Local environment (contains OAuth tokens — must never be committed)
+.envrc
+.env
+.env.*
+
+# cmux-team workspace (local-only orchestration state)
+.team/
+
+# Build artifacts
+dist/
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Editor
+.vscode/
+.idea/
