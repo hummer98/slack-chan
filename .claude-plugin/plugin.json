@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "slack-chan",
+  "description": "Slack interface for Claude — multi-workspace, default channels, persistent local cache. Read channel/DM history, post messages, download files, look up users, search cached messages, and call any Slack Web API method via a Bash skill.",
+  "author": {
+    "name": "Yuji Yamamoto",
+    "email": "yuji.yamamoto@tayorie.jp",
+    "url": "https://github.com/hummer98"
+  },
+  "homepage": "https://github.com/hummer98/slack-chan#readme",
+  "repository": "https://github.com/hummer98/slack-chan",
+  "license": "MIT",
+  "keywords": ["slack", "claude-code", "ai", "skill", "cli", "bun"],
+  "skills": ["./skills/"]
+}

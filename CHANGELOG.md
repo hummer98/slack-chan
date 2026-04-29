@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `.claude-plugin/plugin.json` と `.claude-plugin/marketplace.json` および
+  `skills/slack-chan/SKILL.md` を追加し、本リポジトリを Claude Code plugin
+  として配布できる構造を整備（`/plugin marketplace add hummer98/slack-chan`
+  → `/plugin install slack-chan@slack-chan-marketplace` で install 可能）。
+  marketplace 戦略は ADR-0010 を参照 (T019)
 - `slack-chan api <method> [k=v ...] [k:=<json> ...]` 実装:
   Slack Web API 任意 method を呼び出す escape hatch。`--workspace` 必須
   （default fallback なし、誤書き込み防止）。レスポンスは `ok` の真偽に

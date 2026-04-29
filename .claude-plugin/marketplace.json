@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "slack-chan-marketplace",
+  "description": "Single-plugin marketplace hosting slack-chan, the Slack interface for Claude.",
+  "owner": {
+    "name": "Yuji Yamamoto",
+    "email": "yuji.yamamoto@tayorie.jp"
+  },
+  "plugins": [
+    {
+      "name": "slack-chan",
+      "source": "./",
+      "description": "Slack interface for Claude — multi-workspace, default channels, persistent local cache.",
+      "homepage": "https://github.com/hummer98/slack-chan#readme",
+      "repository": "https://github.com/hummer98/slack-chan",
+      "license": "MIT",
+      "keywords": ["slack", "claude-code", "ai", "skill", "cli", "bun"],
+      "category": "productivity",
+      "tags": ["slack", "claude", "skill"]
+    }
+  ]
+}

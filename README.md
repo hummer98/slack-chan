@@ -44,6 +44,63 @@ manifest は [`docs/getting-started.md`](docs/getting-started.md) と
 > 実装予定**です。Phase 1 時点（このリポジトリ）では token 取得手順だけが
 > 整備されており、実際の登録コマンドはまだ動きません。
 
+## Install as a Claude Code plugin
+
+slack-chan は Claude Code plugin として配布されています。Claude が自然言語
+で `slack-chan` の各サブコマンドを呼び出せるようにするには、以下のいずれ
+かの方法で plugin を install してください。
+
+### Quick local check（開発者・コントリビュータ向け）
+
+リポジトリを clone した状態で、`--plugin-dir` フラグを使って Claude Code
+にこのチェックアウトを直接読ませる:
+
+```sh
+git clone https://github.com/hummer98/slack-chan.git
+cd slack-chan
+bun install
+bun run build:bin     # → ./dist/slack-chan を作る（PATH に通しておく）
+claude --plugin-dir ./
+```
+
+Claude Code 起動後、`/help` の plugins セクションに `slack-chan:slack-chan`
+が表示されれば成功です。
+
+### Marketplace 経由で install（通常ユーザ向け）
+
+`hummer98/slack-chan` リポジトリは single-plugin marketplace として
+構成されているため、Claude Code から marketplace を追加してそのまま
+install できます:
+
+```sh
+# Claude Code のプロンプトから:
+/plugin marketplace add hummer98/slack-chan
+/plugin install slack-chan@slack-chan-marketplace
+```
+
+CLI 本体（`slack-chan` バイナリ）は別途 npm か GitHub Release から install
+してください（`## Quick start` の `bun run build:bin` か `npm install -g
+slack-chan`）。plugin は CLI を `Bash(slack-chan:*)` 経由で呼ぶだけで、
+バイナリ自体は同梱されません。
+
+### Token と config の登録
+
+plugin install 後、最初に 1 度だけ Slack token を登録します:
+
+```sh
+slack-chan config workspace add --token=xoxp-... --name=my-workspace
+slack-chan config workspace set-default <team_id>
+```
+
+詳細手順は [`docs/getting-started.md`](docs/getting-started.md)。
+**`xoxc-` / `xoxd-` トークンは AUP 違反のため拒絶されます** — 必ず
+Slack App を作成して `xoxp-` / `xoxb-` を発行してください。
+
+> **配布チャネルの設計判断**は
+> [`docs/decisions/0010-plugin-distribution.md`](docs/decisions/0010-plugin-distribution.md)
+> を参照。Anthropic 公式 marketplace（`claude-plugins-official`）への
+> submission は将来別途行います。
+
 ## Roadmap
 
 - **Phase 1 (current PR): scaffolding** — `package.json`, `tsconfig.json`,
