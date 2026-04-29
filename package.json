@@ -15,7 +15,7 @@
   "scripts": {
     "dev": "bun run ./src/cli/index.ts",
     "build": "bun build --compile --target=bun ./src/cli/index.ts --outfile dist/slack-chan",
-    "test": "echo \"test deferred to commit 4\"",
+    "test": "bun test",
     "lint": "biome check",
     "format": "biome format --write",
     "typecheck": "tsc --noEmit"

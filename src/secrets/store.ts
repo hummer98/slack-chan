@@ -20,18 +20,16 @@ export interface TokenStore {
 export class MemoryTokenStore implements TokenStore {
   readonly #tokens = new Map<string, string>();
 
-  get(workspace: string): Promise<string | undefined> {
-    return Promise.resolve(this.#tokens.get(workspace));
+  async get(workspace: string): Promise<string | undefined> {
+    return this.#tokens.get(workspace);
   }
 
-  set(workspace: string, token: string): Promise<void> {
+  async set(workspace: string, token: string): Promise<void> {
     assertAllowedSlackToken(token);
     this.#tokens.set(workspace, token);
-    return Promise.resolve();
   }
 
-  remove(workspace: string): Promise<void> {
+  async remove(workspace: string): Promise<void> {
     this.#tokens.delete(workspace);
-    return Promise.resolve();
   }
 }
