@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `slack-chan api <method> [k=v ...] [k:=<json> ...]` 実装:
+  Slack Web API 任意 method を呼び出す escape hatch。`--workspace` 必須
+  （default fallback なし、誤書き込み防止）。レスポンスは `ok` の真偽に
+  関わらず JSONL 1 行で stdout、transport エラーのみ exit code に反映 (T017)
 - examples/slack-app-manifest.yml と docs/getting-started.md を追加 (T021)
 - `slack-chan download <ts>` 実装: cache hit / Slack history fetch から
   files を取得して `$XDG_DATA_HOME/slack-chan/files/<team_id>/<file_id>[.<ext>]`

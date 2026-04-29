@@ -1,4 +1,4 @@
-import { apiCmd } from "./api.ts";
+import { apiCmd } from "./api/index.ts";
 import { configCmd } from "./config/index.ts";
 import { dmCmd } from "./dm/index.ts";
 import { downloadCmd } from "./download/index.ts";
