@@ -1,0 +1,23 @@
+{
+  "name": "slack-chan",
+  "version": "0.0.0",
+  "description": "Slack interface for Claude — multi-workspace, default channels, persistent cache.",
+  "author": "Yuji Yamamoto <yuji.yamamoto@tayorie.jp> (https://github.com/hummer98)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/cli/index.ts",
+  "bin": {
+    "slack-chan": "./src/cli/index.ts"
+  },
+  "exports": {
+    ".": "./src/cli/index.ts"
+  },
+  "scripts": {
+    "dev": "bun run ./src/cli/index.ts",
+    "build": "bun build --compile --target=bun ./src/cli/index.ts --outfile dist/slack-chan",
+    "test": "echo \"test deferred to commit 4\"",
+    "lint": "biome check",
+    "format": "biome format --write",
+    "typecheck": "echo \"typecheck deferred to commit 3\""
+  }
+}
