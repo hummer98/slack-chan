@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `slack-chan download <ts>` 実装: cache hit / Slack history fetch から
   files を取得して `$XDG_DATA_HOME/slack-chan/files/<team_id>/<file_id>[.<ext>]`
   に保存 (`--out`, `--force`, `--channel` 対応, T014)
+- `slack-chan dm <user> <text>` / `slack-chan dm <user> --read` 実装:
+  `<user>` を Uxxx / email / @name から user_id に解決し
+  `conversations.open` で IM channel を開いて post / read 経路に再委譲
+  (T013)
 
 ### Changed
 

@@ -4,6 +4,7 @@ import {
   type ConversationsHistoryArguments,
   type ConversationsInfoArguments,
   type ConversationsListArguments,
+  type ConversationsOpenArguments,
   type ConversationsRepliesArguments,
   type FilesUploadV2Arguments,
   type SearchMessagesArguments,
@@ -71,6 +72,8 @@ export class SlackClient {
   conversationsList = (args?: ConversationsListArguments) => this.client.conversations.list(args);
 
   conversationsInfo = (args: ConversationsInfoArguments) => this.client.conversations.info(args);
+
+  conversationsOpen = (args: ConversationsOpenArguments) => this.client.conversations.open(args);
 
   chatPostMessage = (args: ChatPostMessageArguments) => this.client.chat.postMessage(args);
 

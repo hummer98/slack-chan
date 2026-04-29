@@ -1,6 +1,6 @@
 import { apiCmd } from "./api.ts";
 import { configCmd } from "./config/index.ts";
-import { dmCmd } from "./dm.ts";
+import { dmCmd } from "./dm/index.ts";
 import { downloadCmd } from "./download/index.ts";
 import { postCmd } from "./post/index.ts";
 import { readCmd } from "./read/index.ts";
