@@ -5,20 +5,48 @@
   "author": "Yuji Yamamoto <yuji.yamamoto@tayorie.jp> (https://github.com/hummer98)",
   "license": "MIT",
   "type": "module",
-  "main": "./src/cli/index.ts",
+  "main": "./dist/slack-chan.js",
   "bin": {
-    "slack-chan": "./src/cli/index.ts"
+    "slack-chan": "dist/slack-chan.js"
   },
   "exports": {
-    ".": "./src/cli/index.ts"
+    ".": "./dist/slack-chan.js"
+  },
+  "files": [
+    "dist/slack-chan.js",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hummer98/slack-chan.git"
+  },
+  "homepage": "https://github.com/hummer98/slack-chan#readme",
+  "bugs": {
+    "url": "https://github.com/hummer98/slack-chan/issues"
+  },
+  "keywords": [
+    "slack",
+    "cli",
+    "claude",
+    "bun",
+    "ai"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "dev": "bun run ./src/cli/index.ts",
-    "build": "bun build --compile --target=bun ./src/cli/index.ts --outfile dist/slack-chan",
+    "build": "bun run build:js",
+    "build:js": "bun build --target=bun --outfile dist/slack-chan.js ./src/cli/index.ts",
+    "build:bin": "bun build --compile --target=bun ./src/cli/index.ts --outfile dist/slack-chan",
     "test": "bun test",
     "lint": "biome check",
     "format": "biome format --write",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run typecheck && bun run test && bun run build:js"
   },
   "dependencies": {
     "@slack/web-api": "^7.15.1"

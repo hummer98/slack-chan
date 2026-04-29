@@ -32,3 +32,9 @@ in npm publish task.** Phase 2 以降の npm publish タスクで
 `bin: "./dist/index.js"` に切り替えるか、`dist/slack-chan` バイナリへの
 シムスクリプトを置くかを決定する。Master へ「npm 配布時の `package.json`
 形態の見直し」を Phase 2 task として独立起票することを申し送り済み。
+
+**Update (2026-04-29, T004)**: 上記の宿題を T004 リリースプロセス整備で
+清算した。`bin` / `main` / `exports` は `./dist/slack-chan.js`（`bun build
+--target=bun` のバンドル JS）に切り替え済み。`bun build --compile` の
+単一バイナリは GitHub Release 専用とする二系統運用に分離した。詳細は
+ADR-0006 を参照。
