@@ -178,4 +178,92 @@ describe("dao/messages", () => {
     expect(messages.getByTs(db, "T1", "1700000000.000100").length).toBe(1);
     expect(messages.getByTs(db, "T1", "9999999999.000000")).toEqual([]);
   });
+
+  // T011 Phase 1 — DAO additions
+  test("(a) getLatestTs returns the highest ts or null", () => {
+    expect(messages.getLatestTs(db, "T1", "C1")).toBeNull();
+    messages.upsert(db, makeRow({ ts: "1700000000.000100" }));
+    messages.upsert(db, makeRow({ ts: "1700000000.000300" }));
+    messages.upsert(db, makeRow({ ts: "1700000000.000200" }));
+    expect(messages.getLatestTs(db, "T1", "C1")).toBe("1700000000.000300");
+    expect(messages.getLatestTs(db, "T1", "C-missing")).toBeNull();
+    expect(messages.getLatestTs(db, "T-missing", "C1")).toBeNull();
+  });
+
+  test("(b) getLatestN returns rows in DESC order limited to n", () => {
+    for (let i = 1; i <= 5; i++) {
+      messages.upsert(db, makeRow({ ts: `170000000${i}.000000`, text: `t${i}` }));
+    }
+    const rows = messages.getLatestN(db, "T1", "C1", 3);
+    expect(rows.map((r) => r.text)).toEqual(["t5", "t4", "t3"]);
+  });
+
+  test("(c) getInRange uses ts >= boundary inclusive, ascending", () => {
+    messages.upsert(db, makeRow({ ts: "1700000000.000100", text: "a" }));
+    messages.upsert(db, makeRow({ ts: "1700000000.000200", text: "b" }));
+    messages.upsert(db, makeRow({ ts: "1700000000.000300", text: "c" }));
+
+    const inclusive = messages.getInRange(db, "T1", "C1", "1700000000.000200");
+    expect(inclusive.map((r) => r.text)).toEqual(["b", "c"]);
+
+    const all = messages.getInRange(db, "T1", "C1", "0");
+    expect(all.length).toBe(3);
+  });
+
+  test("(d) get returns matching row or null (T011 alias of `get` shape)", () => {
+    messages.upsert(db, makeRow({ ts: "1700000000.000100", text: "found" }));
+    const hit = messages.get(db, "T1", "C1", "1700000000.000100");
+    expect(hit?.text).toBe("found");
+    expect(messages.get(db, "T1", "C1", "1700000000.999999")).toBeNull();
+  });
+
+  test("(e) getForOutput excludes deleted and respects since_ts / limit", () => {
+    messages.upsert(db, makeRow({ ts: "1700000000.000100", text: "old" }));
+    messages.upsert(db, makeRow({ ts: "1700000000.000200", text: "mid" }));
+    messages.upsert(db, makeRow({ ts: "1700000000.000300", text: "new" }));
+    messages.markDeleted(db, "T1", "C1", "1700000000.000200");
+
+    const all = messages.getForOutput(db, "T1", "C1", { limit: 10, since_ts: null });
+    expect(all.map((r) => r.text)).toEqual(["new", "old"]); // DESC
+
+    const sinceMid = messages.getForOutput(db, "T1", "C1", {
+      limit: 10,
+      since_ts: "1700000000.000200",
+    });
+    expect(sinceMid.map((r) => r.text)).toEqual(["new"]);
+
+    const limited = messages.getForOutput(db, "T1", "C1", { limit: 1, since_ts: null });
+    expect(limited.length).toBe(1);
+    expect(limited[0]?.text).toBe("new");
+  });
+
+  test("(f) getThread returns parent + replies in ts ASC, excluding deleted", () => {
+    const parent = "1700000100.000000";
+    messages.upsert(db, makeRow({ ts: parent, thread_ts: parent, text: "parent" }));
+    messages.upsert(db, makeRow({ ts: "1700000200.000000", thread_ts: parent, text: "r1" }));
+    messages.upsert(db, makeRow({ ts: "1700000300.000000", thread_ts: parent, text: "r2" }));
+    messages.upsert(db, makeRow({ ts: "1700000400.000000", thread_ts: null, text: "outside" }));
+    messages.markDeleted(db, "T1", "C1", "1700000200.000000");
+
+    const thread = messages.getThread(db, "T1", "C1", parent);
+    expect(thread.map((r) => r.text)).toEqual(["parent", "r2"]);
+  });
+
+  test("(g) markAlive flips deleted=1 to 0 and is scoped to (team_id, channel_id, ts)", () => {
+    messages.upsert(db, makeRow({ ts: "1700000000.000100", text: "v" }));
+    messages.markDeleted(db, "T1", "C1", "1700000000.000100");
+    expect(messages.get(db, "T1", "C1", "1700000000.000100")?.deleted).toBe(1);
+
+    // 別 channel/team では作用しない
+    messages.markAlive(db, "T-other", "C1", "1700000000.000100");
+    messages.markAlive(db, "T1", "C-other", "1700000000.000100");
+    expect(messages.get(db, "T1", "C1", "1700000000.000100")?.deleted).toBe(1);
+
+    messages.markAlive(db, "T1", "C1", "1700000000.000100");
+    expect(messages.get(db, "T1", "C1", "1700000000.000100")?.deleted).toBe(0);
+
+    // deleted=0 への呼び出しは no-op
+    messages.markAlive(db, "T1", "C1", "1700000000.000100");
+    expect(messages.get(db, "T1", "C1", "1700000000.000100")?.deleted).toBe(0);
+  });
 });

@@ -109,3 +109,82 @@ export function getByTs(db: Database, team_id: string, ts: string): MessageRow[]
     )
     .all(team_id, ts);
 }
+
+export function getLatestTs(db: Database, team_id: string, channel_id: string): string | null {
+  const row = db
+    .query<{ ts: string }, [string, string]>(
+      "SELECT ts FROM messages WHERE team_id = ? AND channel_id = ? ORDER BY ts DESC LIMIT 1",
+    )
+    .get(team_id, channel_id);
+  return row ? row.ts : null;
+}
+
+export function getLatestN(
+  db: Database,
+  team_id: string,
+  channel_id: string,
+  n: number,
+): MessageRow[] {
+  return db
+    .query<MessageRow, [string, string, number]>(
+      "SELECT * FROM messages WHERE team_id = ? AND channel_id = ? ORDER BY ts DESC LIMIT ?",
+    )
+    .all(team_id, channel_id, n);
+}
+
+export function getInRange(
+  db: Database,
+  team_id: string,
+  channel_id: string,
+  oldest_ts: string,
+): MessageRow[] {
+  return db
+    .query<MessageRow, [string, string, string]>(
+      "SELECT * FROM messages WHERE team_id = ? AND channel_id = ? AND ts >= ? ORDER BY ts ASC",
+    )
+    .all(team_id, channel_id, oldest_ts);
+}
+
+export interface GetForOutputOptions {
+  limit: number;
+  since_ts: string | null;
+}
+
+export function getForOutput(
+  db: Database,
+  team_id: string,
+  channel_id: string,
+  opts: GetForOutputOptions,
+): MessageRow[] {
+  if (opts.since_ts !== null) {
+    return db
+      .query<MessageRow, [string, string, string, number]>(
+        "SELECT * FROM messages WHERE team_id = ? AND channel_id = ? AND ts >= ? AND deleted = 0 ORDER BY ts DESC LIMIT ?",
+      )
+      .all(team_id, channel_id, opts.since_ts, opts.limit);
+  }
+  return db
+    .query<MessageRow, [string, string, number]>(
+      "SELECT * FROM messages WHERE team_id = ? AND channel_id = ? AND deleted = 0 ORDER BY ts DESC LIMIT ?",
+    )
+    .all(team_id, channel_id, opts.limit);
+}
+
+export function getThread(
+  db: Database,
+  team_id: string,
+  channel_id: string,
+  parent_ts: string,
+): MessageRow[] {
+  return db
+    .query<MessageRow, [string, string, string, string]>(
+      "SELECT * FROM messages WHERE team_id = ? AND channel_id = ? AND (ts = ? OR thread_ts = ?) AND deleted = 0 ORDER BY ts ASC",
+    )
+    .all(team_id, channel_id, parent_ts, parent_ts);
+}
+
+export function markAlive(db: Database, team_id: string, channel_id: string, ts: string): void {
+  db.prepare(
+    "UPDATE messages SET deleted = 0 WHERE team_id = ? AND channel_id = ? AND ts = ? AND deleted = 1",
+  ).run(team_id, channel_id, ts);
+}

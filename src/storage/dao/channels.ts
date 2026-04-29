@@ -43,3 +43,22 @@ export function getLastSyncedTs(db: Database, team_id: string, channel_id: strin
     .get(team_id, channel_id);
   return row ? row.last_synced_ts : null;
 }
+
+export function getOne(db: Database, team_id: string, channel_id: string): ChannelRow | null {
+  const row = db
+    .query<ChannelRow, [string, string]>(
+      "SELECT * FROM channels WHERE team_id = ? AND channel_id = ?",
+    )
+    .get(team_id, channel_id);
+  return row ?? null;
+}
+
+export function getByName(db: Database, team_id: string, name: string): ChannelRow | null {
+  const row = db
+    .query<ChannelRow, [string, string]>(
+      "SELECT * FROM channels WHERE team_id = ? AND name = ? " +
+        "ORDER BY COALESCE(fetched_at, 0) DESC LIMIT 1",
+    )
+    .get(team_id, name);
+  return row ?? null;
+}

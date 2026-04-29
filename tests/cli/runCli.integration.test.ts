@@ -1,20 +1,45 @@
 import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import pkg from "../../package.json" with { type: "json" };
 import { runCli } from "../../src/cli/index.ts";
 
 describe("runCli integration", () => {
   let stdoutSpy: ReturnType<typeof spyOn> | null = null;
   let stderrSpy: ReturnType<typeof spyOn> | null = null;
+  let savedDefaultWs: string | undefined;
+  let savedDefaultCh: string | undefined;
+  let savedXdgConfig: string | undefined;
+  let xdgDir: string | null = null;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     stdoutSpy = spyOn(process.stdout, "write").mockImplementation(() => true);
     stderrSpy = spyOn(process.stderr, "write").mockImplementation(() => true);
+    // ── M2: env を deterministic に
+    savedDefaultWs = process.env.SLACK_CHAN_DEFAULT_WORKSPACE;
+    savedDefaultCh = process.env.SLACK_CHAN_DEFAULT_CHANNEL;
+    savedXdgConfig = process.env.XDG_CONFIG_HOME;
+    delete process.env.SLACK_CHAN_DEFAULT_WORKSPACE;
+    delete process.env.SLACK_CHAN_DEFAULT_CHANNEL;
+    xdgDir = await mkdtemp(join(tmpdir(), "slack-chan-runcli-"));
+    process.env.XDG_CONFIG_HOME = xdgDir;
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     mock.restore();
     stdoutSpy = null;
     stderrSpy = null;
+    if (savedDefaultWs !== undefined) process.env.SLACK_CHAN_DEFAULT_WORKSPACE = savedDefaultWs;
+    else delete process.env.SLACK_CHAN_DEFAULT_WORKSPACE;
+    if (savedDefaultCh !== undefined) process.env.SLACK_CHAN_DEFAULT_CHANNEL = savedDefaultCh;
+    else delete process.env.SLACK_CHAN_DEFAULT_CHANNEL;
+    if (savedXdgConfig !== undefined) process.env.XDG_CONFIG_HOME = savedXdgConfig;
+    else delete process.env.XDG_CONFIG_HOME;
+    if (xdgDir !== null) {
+      await rm(xdgDir, { recursive: true, force: true });
+      xdgDir = null;
+    }
   });
 
   function stdout(): string {
@@ -50,10 +75,10 @@ describe("runCli integration", () => {
     expect(stdout()).toContain(pkg.version);
   });
 
-  it("(3) read foo --workspace=T123 → exit 1 + 'not implemented' on stderr", async () => {
-    const code = await runCli(["read", "foo", "--workspace=T123"]);
+  it("(3) read foo (no --workspace, no default) → exit 1 + 'workspace ... is required'", async () => {
+    const code = await runCli(["read", "foo"]);
     expect(code).toBe(1);
-    expect(stderr()).toContain("not implemented");
+    expect(stderr()).toMatch(/--workspace=T\.\.\. is required/);
   });
 
   it("(4) read foo --json --human → exit 1 + 'mutually exclusive'", async () => {

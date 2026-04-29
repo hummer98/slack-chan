@@ -3,7 +3,7 @@ import { configCmd } from "./config/index.ts";
 import { dmCmd } from "./dm.ts";
 import { downloadCmd } from "./download/index.ts";
 import { postCmd } from "./post/index.ts";
-import { readCmd } from "./read.ts";
+import { readCmd } from "./read/index.ts";
 import { searchCmd } from "./search.ts";
 import { statsCmd } from "./stats.ts";
 import { syncCmd } from "./sync.ts";
