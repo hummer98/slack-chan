@@ -31,14 +31,24 @@ describe("assertAllowedSlackToken", () => {
 describe("MemoryTokenStore (guard wiring smoke check)", () => {
   it("rejects xoxc- via set() — confirms the guard is wired through the store", async () => {
     const store = new MemoryTokenStore();
-    await expect(store.set("ws-1", "xoxc-stolen-token")).rejects.toThrow(/Slack AUP/);
+    await expect(store.set("T0001", "xoxc-stolen-token")).rejects.toThrow(/Slack AUP/);
   });
 
-  it("round-trips an xoxp- token through set / get / remove", async () => {
+  it("round-trips an xoxp- token through set / get / delete", async () => {
     const store = new MemoryTokenStore();
-    await store.set("ws-1", "xoxp-test-token");
-    expect(await store.get("ws-1")).toBe("xoxp-test-token");
-    await store.remove("ws-1");
-    expect(await store.get("ws-1")).toBeUndefined();
+    await store.set("T0001", "xoxp-test-token");
+    expect(await store.get("T0001")).toBe("xoxp-test-token");
+    await store.delete("T0001");
+    expect(await store.get("T0001")).toBeUndefined();
+  });
+
+  it("list() returns the team_ids that have been set", async () => {
+    const store = new MemoryTokenStore();
+    await store.set("T0001", "xoxp-a");
+    await store.set("T0002", "xoxp-b");
+    const ids = await store.list();
+    expect(ids.sort()).toEqual(["T0001", "T0002"]);
+    await store.delete("T0001");
+    expect(await store.list()).toEqual(["T0002"]);
   });
 });
