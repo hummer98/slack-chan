@@ -1,10 +1,15 @@
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { resolveConfigDir } from "../config/path.ts";
+import type { TokensStore } from "../config/types.ts";
 import { FileTokenStore } from "./file-store.ts";
 import { KeychainTokenStore, whichSecuritySync } from "./keychain-store.ts";
 import type { TokenStore } from "./store.ts";
 
-export type TokenStoreKind = "keychain" | "file";
+/**
+ * Backend selector for {@link createTokenStore}. Identical to the config-layer
+ * `TokensStore` (`src/config/types.ts`) — re-exported here so secrets callers
+ * do not have to reach into `config/` for a single type alias.
+ */
+export type TokenStoreKind = TokensStore;
 
 export interface TokenStoreOptions {
   /**
@@ -18,13 +23,6 @@ export interface TokenStoreOptions {
   configDir?: string;
   /** Keychain service name. Defaults to `slack-chan`. */
   service?: string;
-}
-
-function resolveConfigDir(explicit: string | undefined): string {
-  if (explicit && explicit.trim().length > 0) return explicit;
-  const xdg = process.env.XDG_CONFIG_HOME?.trim();
-  if (xdg && xdg.length > 0) return join(xdg, "slack-chan");
-  return join(homedir(), ".config", "slack-chan");
 }
 
 /**
@@ -42,7 +40,7 @@ export function createTokenStore(
   kind: TokenStoreKind,
   options: TokenStoreOptions = {},
 ): TokenStore {
-  const configDir = resolveConfigDir(options.configDir);
+  const configDir = resolveConfigDir({ configDir: options.configDir });
   switch (kind) {
     case "file":
       return new FileTokenStore({ configDir });

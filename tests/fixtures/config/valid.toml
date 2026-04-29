@@ -1,0 +1,15 @@
+default_workspace = "T01ABCDEF"
+
+[workspace.T01ABCDEF]
+name = "Acme"
+default_channel = "C0123456"
+tokens_store = "keychain"
+
+[workspace.T02XYZ]
+name = "Personal"
+default_channel = ""
+tokens_store = "file"
+
+[output]
+format = "jsonl"
+cache_window_days = 7
