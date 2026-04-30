@@ -25,3 +25,6 @@ Thumbs.db
 
 # npm lockfile residue (we use bun.lock; npm tooling sometimes drops this)
 package-lock.json
+
+# Claude Code session locks (project-local, ephemeral)
+.claude/scheduled_tasks.lock
