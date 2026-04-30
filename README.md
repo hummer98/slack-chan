@@ -8,10 +8,13 @@ local cache. Designed to be invoked by Claude Code via a Bash skill so the
 agent can read context from Slack and post reports back without manual
 plumbing.
 
-> **Status: Phase 1 scaffolding only.** This repository currently contains
-> the runtime / language setup, the directory skeleton for Phase 2+, the
-> Slack AUP guard, and a minimal CLI that supports `--version` / `--help`.
-> No subcommand is implemented yet.
+> **Status: Phases 1–4 implemented; pre-`0.1.0`.** Phase 1–4 tasks
+> (scaffolding & CI, SQLite cache, auth & config, all Slack feature
+> commands, SKILL.md plugin, release & Homebrew pipelines) are complete
+> and the CLI is locally usable via `bun run build:bin`. The first public
+> release (`0.1.0` tag → `npm publish` → GitHub Release) and Anthropic
+> official marketplace submission are still pending — see
+> [Roadmap § Phase 5+](#roadmap).
 
 ## Quick start
 
@@ -39,10 +42,6 @@ manifest は [`docs/getting-started.md`](docs/getting-started.md) と
 ください。各 scope の意味付きの解説版は
 [`examples/slack-app-manifest.commented.yml`](examples/slack-app-manifest.commented.yml)
 にあります。
-
-> **CLI による token 登録 (`slack-chan config workspace add`) は Phase 2 で
-> 実装予定**です。Phase 1 時点（このリポジトリ）では token 取得手順だけが
-> 整備されており、実際の登録コマンドはまだ動きません。
 
 ## Install as a Claude Code plugin
 
