@@ -103,21 +103,47 @@ Slack App を作成して `xoxp-` / `xoxb-` を発行してください。
 
 ## Roadmap
 
-- **Phase 1 (current PR): scaffolding** — `package.json`, `tsconfig.json`,
-  `biome.json`, `src/` skeleton, AUP guard, `TokenStore` interface stub,
-  empty migration, `bun test` + nock-fallback sanity, 5 ADRs.
-- **Phase 2: SQLite + auth + config + CLI subcommand router** — real
-  migrations, Keychain / Secret Service / 0600 file token store, TOML
-  config under XDG paths, `citty`-style subcommand routing.
-- **Phase 3: Slack feature commands** — `read` / `post` / `dm` / `download`
-  / `user` / `search` / `api` / `sync` / `stats`, with cache semantics
-  (incremental fetch + recent-N refetch for edits/deletes, on-demand
-  thread replies).
-- **Phase 4: SKILL.md + recording helper + distribution** — Claude Code
-  plugin marketplace entry, npm publish, Homebrew tap, `bun build --compile`
-  release pipeline. — **npm publish と GitHub Release（compile binary）は
-  T004 で先行整備済み（ADR-0006 / [Releasing](#releasing)）。Homebrew tap
-  と plugin marketplace 登録は Phase 4 で扱う。**
+- **Phase 1: scaffolding** — ✅ Completed (T001-T004). `package.json`,
+  `tsconfig.json`, `biome.json`, `src/` skeleton, AUP guard, `TokenStore`
+  interface stub, empty migration, `bun test` + nock-fallback sanity, 5
+  ADRs。CI (lint / typecheck / test)、コミュニティドキュメント
+  (SECURITY / CONTRIBUTING / Code of Conduct / Issue&PR templates /
+  Dependabot)、リリースパイプライン (GHA + npm OIDC Trusted Publishing +
+  `bun build --compile` の 4 ターゲット assets) も T004 までで先行整備済み
+  (ADR-0006 / [Releasing](#releasing))。
+- **Phase 2: SQLite + auth + config + CLI subcommand router** — ✅
+  Completed (T005-T010). Migration runner + DAO、Keychain / Secret Service
+  / 0600 file token store、TOML config under XDG paths（env overrides 付き）、
+  `SlackClient` ラッパ (rate-limit + redact logger)、CLI 骨格 + 出力
+  フォーマッタ (`jsonl` / `human` / `toon-stub`)、`config` サブコマンド群
+  (`workspace` / `channel` / `tokens-store` / `show`)。
+- **Phase 3: Slack feature commands** — ✅ Completed (T011-T018). `read` /
+  `post` / `dm` / `download` / `user` / `search` / `api` / `sync` /
+  `stats`, with cache semantics (incremental fetch + recent-N refetch for
+  edits / deletes, on-demand thread replies)。`search` は FTS5 ローカル
+  キャッシュと Slack `search.messages` の並列マージ、`api` は generic
+  Slack Web API escape hatch として実装。
+- **Phase 4: SKILL.md + recording helper + distribution** — ✅ Completed
+  (T019-T022). Claude Code plugin manifest + SKILL.md
+  （`hummer98/slack-chan` を single-plugin marketplace 化、ADR-0010、
+  T019）、fixture 録画 helper + redact スクリプト
+  (axios interceptor で録画 →`SlackFixtureRaw` を redact →
+  `WebClient.prototype.apiCall` stub で再生、ADR-0009、T020)、
+  Slack App manifest テンプレート + getting-started guide（T021）、
+  Homebrew tap (`hummer98/homebrew-tap`) 向け auto-bump workflow +
+  Formula テンプレート（T022、`release: published` で fixture 検証付きの
+  PR 作成 workflow が走る）。npm publish と GitHub Release（compile
+  binary）は T004 で先行整備済み（ADR-0006 / [Releasing](#releasing)）。
+- **Phase 5+: 公開リリースと公式 marketplace submission** — `0.1.0` タグ
+  を打って GitHub Release + `npm publish` を発行する初回公開リリース、
+  Anthropic 公式 marketplace
+  （`anthropics/claude-plugins-official`）への plugin 申請（ADR-0010 で
+  「`0.1.0` タグ + npm publish 完了以降の別タスク」と明記）、
+  `hummer98/homebrew-tap` repo の初回作成と初版 Formula の手動 push +
+  `HOMEBREW_TAP_TOKEN` (Fine-grained PAT) の登録など、`bump-homebrew.yml`
+  を稼働させるための一度きりの人間オペレーション（T022 残課題。手順は
+  T022 マージ後に追加される `### Initial setup: Homebrew tap`、および
+  `.team/tasks/022-*/runs/*/summary.md` を参照）。
 
 See [`docs/seed.md`](docs/seed.md) for the design seed and
 [`docs/decisions/`](docs/decisions/) for ADR-0001..0006 (SQLite driver,
