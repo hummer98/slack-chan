@@ -53,3 +53,38 @@ describe("renderStats human format", () => {
     expect(out).toContain('"db_size_bytes":687820');
   });
 });
+
+describe("renderStats rich format", () => {
+  it("snapshot with emoji glyphs (colors=off, emoji=on)", () => {
+    const now_ms = 1777335624 * 1000;
+    const out = renderStats(rec(), "rich", {
+      isTTY: false,
+      emojiEnabled: true,
+      now_ms,
+      tz: "Asia/Tokyo",
+    });
+    const expected =
+      "📦 Workspace: Toranomon (T9Q9BSR6C)\n" +
+      "  💬 Channels  : 1 (member: 0)\n" +
+      "  📝 Messages  : 40 (alive: 40)\n" +
+      "  👥 Users     : 193\n" +
+      "  📁 Files     : 0\n" +
+      "  🕐 Last sync : 2026-04-25 09:20:24 (3 days ago)\n" +
+      "  💾 DB size   : 671.7 KiB\n";
+    expect(out).toBe(expected);
+  });
+
+  it("emoji disabled: header collapses prefix and KV omits glyph column", () => {
+    const now_ms = 1777335624 * 1000;
+    const out = renderStats(rec(), "rich", {
+      isTTY: false,
+      emojiEnabled: false,
+      now_ms,
+      tz: "Asia/Tokyo",
+    });
+    expect(out.startsWith("Workspace: Toranomon (T9Q9BSR6C)\n")).toBe(true);
+    expect(out).toContain("  Channels  : 1 (member: 0)");
+    expect(out).not.toContain("📦");
+    expect(out).not.toContain("💬");
+  });
+});

@@ -24,13 +24,14 @@ const GLOBAL_NAMES: ReadonlySet<string> = new Set([
   "json",
   "toon",
   "human",
+  "rich",
   "verbose",
   "help",
   "version",
 ]);
 
 /**
- * Resolve the default `--json|--toon|--human` choice when no flag is supplied.
+ * Resolve the default `--json|--toon|--human|--rich` choice when no flag is supplied.
  * Currently returns `"jsonl"` unconditionally; T010 will replace the body with
  * `await getOutputFormat()` to honour config / `SLACK_CHAN_OUTPUT_FORMAT`.
  */
@@ -49,6 +50,7 @@ export function parseGlobalFlags(rawArgs: readonly string[]): ParsedArgs {
       json: { type: "boolean" },
       toon: { type: "boolean" },
       human: { type: "boolean" },
+      rich: { type: "boolean" },
       verbose: { type: "boolean" },
       help: { type: "boolean", short: "h" },
       version: { type: "boolean", short: "v" },
@@ -58,16 +60,17 @@ export function parseGlobalFlags(rawArgs: readonly string[]): ParsedArgs {
     tokens: true,
   });
 
-  // Format exclusivity: at most one of --json / --toon / --human may be set.
-  const formatFlags = [values.json, values.toon, values.human].filter(Boolean).length;
+  // Format exclusivity: at most one of --json / --toon / --human / --rich may be set.
+  const formatFlags = [values.json, values.toon, values.human, values.rich].filter(Boolean).length;
   if (formatFlags > 1) {
-    throw new UserError("--json / --toon / --human are mutually exclusive.");
+    throw new UserError("--json / --toon / --human / --rich are mutually exclusive.");
   }
 
   let format: OutputFormat;
   if (values.json === true) format = "jsonl";
   else if (values.toon === true) format = "toon";
   else if (values.human === true) format = "human";
+  else if (values.rich === true) format = "rich";
   else format = resolveDefaultFormat();
 
   // Identify the subcommand boundary: the first `positional` token in arg order.

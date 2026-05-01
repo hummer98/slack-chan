@@ -1,8 +1,9 @@
 import type { Database } from "bun:sqlite";
 import type { OutputFormat } from "../../../config/types.ts";
-import { isColorEnabled, makeColors } from "../../../output/ansi.ts";
+import { isColorEnabled, isEmojiEnabled, makeColors } from "../../../output/ansi.ts";
 import { selectFormatter } from "../../../output/format.ts";
 import { formatTimeline, type TimelineEntry } from "../../../output/human/index.ts";
+import { formatRichTimeline, getGlyphs } from "../../../output/rich/index.ts";
 import * as channelsDao from "../../../storage/dao/channels.ts";
 import * as messagesDao from "../../../storage/dao/messages.ts";
 import * as usersDao from "../../../storage/dao/users.ts";
@@ -45,9 +46,11 @@ export interface WriteChannelOutputOptions {
   format: OutputFormat;
   stdout: NodeJS.WritableStream;
   now(): number;
-  /** Override TTY detection. Defaults to `isColorEnabled()` for `--human`. */
+  /** Override TTY detection. Defaults to `isColorEnabled()` for `--human` / `--rich`. */
   isTTY?: boolean;
-  /** IANA tz for human timestamp display. Defaults to system local. */
+  /** Override emoji detection (only affects `--rich`). */
+  emojiEnabled?: boolean;
+  /** IANA tz for human/rich timestamp display. Defaults to system local. */
   tz?: string;
 }
 
@@ -62,6 +65,10 @@ export function writeChannelOutput(opts: WriteChannelOutputOptions): void {
   rows.reverse();
   if (opts.format === "human") {
     opts.stdout.write(renderMessagesHuman(rows, opts));
+    return;
+  }
+  if (opts.format === "rich") {
+    opts.stdout.write(renderMessagesRich(rows, opts));
     return;
   }
   const f = selectFormatter(opts.format);
@@ -80,6 +87,7 @@ export interface WriteThreadOutputOptions {
   stdout: NodeJS.WritableStream;
   now(): number;
   isTTY?: boolean;
+  emojiEnabled?: boolean;
   tz?: string;
 }
 
@@ -97,6 +105,10 @@ export function writeThreadOutput(opts: WriteThreadOutputOptions): void {
     opts.stdout.write(renderMessagesHuman(filtered, opts));
     return;
   }
+  if (opts.format === "rich") {
+    opts.stdout.write(renderMessagesRich(filtered, opts));
+    return;
+  }
   const f = selectFormatter(opts.format);
   for (const row of filtered) {
     opts.stdout.write(f.format(toMessageRecord(row)));
@@ -107,16 +119,15 @@ interface HumanRenderOpts {
   team_id: string;
   db: Database;
   isTTY?: boolean;
+  emojiEnabled?: boolean;
   tz?: string;
 }
 
-/**
- * Render message rows as a human-readable timeline. Channel and user labels are
- * resolved from the DAO cache; unresolved IDs fall back to raw `Cxxx` / `Uxxx`.
- */
-export function renderMessagesHuman(rows: readonly MessageRow[], opts: HumanRenderOpts): string {
-  const colors = makeColors(opts.isTTY === undefined ? isColorEnabled() : opts.isTTY);
-  const tz = opts.tz ?? defaultTz();
+function buildTimelineEntries(
+  rows: readonly MessageRow[],
+  opts: HumanRenderOpts,
+  tz: string,
+): TimelineEntry[] {
   const entries: TimelineEntry[] = [];
   const channelCache = new Map<string, ChannelRow | null>();
   const userCache = new Map<string, string>();
@@ -137,17 +148,39 @@ export function renderMessagesHuman(rows: readonly MessageRow[], opts: HumanRend
       user_label = u?.name ? `@${u.name}` : row.user_id;
       userCache.set(row.user_id, user_label);
     }
-    const is_thread = row.thread_ts !== null;
     entries.push({
       ts: row.ts,
       channel_label,
       user_label,
       text: row.text,
-      is_thread,
+      is_thread: row.thread_ts !== null,
       tz,
     });
   }
+  return entries;
+}
+
+/**
+ * Render message rows as a human-readable timeline. Channel and user labels are
+ * resolved from the DAO cache; unresolved IDs fall back to raw `Cxxx` / `Uxxx`.
+ */
+export function renderMessagesHuman(rows: readonly MessageRow[], opts: HumanRenderOpts): string {
+  const colors = makeColors(opts.isTTY === undefined ? isColorEnabled() : opts.isTTY);
+  const tz = opts.tz ?? defaultTz();
+  const entries = buildTimelineEntries(rows, opts, tz);
   return formatTimeline(entries, colors);
+}
+
+/**
+ * Like {@link renderMessagesHuman}, but with date-grouped headers and emoji
+ * markers (ADR-0014). Falls back to ASCII glyphs when emoji is disabled.
+ */
+export function renderMessagesRich(rows: readonly MessageRow[], opts: HumanRenderOpts): string {
+  const colors = makeColors(opts.isTTY === undefined ? isColorEnabled() : opts.isTTY);
+  const glyphs = getGlyphs(opts.emojiEnabled ?? isEmojiEnabled());
+  const tz = opts.tz ?? defaultTz();
+  const entries = buildTimelineEntries(rows, opts, tz);
+  return formatRichTimeline(entries, colors, glyphs);
 }
 
 function channelLabel(row: ChannelRow | null, channel_id: string): string {

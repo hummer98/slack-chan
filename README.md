@@ -104,17 +104,19 @@ slack-chan config workspace set-default <team_id>
 **`xoxc-` / `xoxd-` トークンは AUP 違反のため拒絶されます** — 必ず
 Slack App を作成して `xoxp-` / `xoxb-` を発行してください。
 
-### 出力フォーマット (`--json` / `--toon` / `--human`)
+### 出力フォーマット (`--json` / `--toon` / `--human` / `--rich`)
 
-各コマンドは 3 つの出力フォーマットを切り替えられます。デフォルトは
-`--json` (= JSONL, 1 行 1 record)。詳細は ADR-0013 を参照
-([`docs/decisions/0013-output-format-roles.md`](docs/decisions/0013-output-format-roles.md))。
+各コマンドは 4 つの出力フォーマットを切り替えられます。デフォルトは
+`--json` (= JSONL, 1 行 1 record)。詳細は ADR-0013 / ADR-0014 を参照
+([`docs/decisions/0013-output-format-roles.md`](docs/decisions/0013-output-format-roles.md),
+[`docs/decisions/0014-rich-formatter.md`](docs/decisions/0014-rich-formatter.md))。
 
 | Flag | 用途 |
 |---|---|
 | `--json` (default) | 機械可読、scripting / AI 用、JSONL |
 | `--toon` | AI 向け軽量フォーマット (ADR-0009 stub のまま JSONL に委譲) |
 | `--human` | **CLI で人間が読む整形** (タイムライン / 表 / カード / 単位付き数値 / 相対時刻) |
+| `--rich` | `--human` + 絵文字アイコン + 強い色 (TTY / デモ / スクショ向け、ADR-0014) |
 
 `--human` 出力サンプル:
 
@@ -146,9 +148,40 @@ TEAM_ID    NAME       DEFAULT_CHANNEL  TOKENS_STORE  TOKEN
 T9Q9BSR6C  Toranomon  (none)           keychain      xoxp-***001b
 ```
 
+`--rich` 出力サンプル (TTY 上では bold + magenta / cyan / green の色付き):
+
+```sh
+$ slack-chan stats --rich
+📦 Workspace: Toranomon (T9Q9BSR6C)
+  💬 Channels  : 1 (member: 0)
+  📝 Messages  : 40 (alive: 40)
+  👥 Users     : 193
+  📁 Files     : 0
+  🕐 Last sync : 2026-04-25 09:20:24 (3 days ago)
+  💾 DB size   : 671.7 KiB
+
+$ slack-chan read general --rich --limit=2
+📅 2026-04-30
+  12:00:23  #全体周知  @U01SPAVUS3W
+    <!channel> 再リマインドです！
+📅 2026-04-25
+  09:14:51  #全体周知  @U08URKDGRP0  🧵
+    遅くなりましたがリマインドです。
+
+$ slack-chan user rr.yamamoto@gmail.com --rich
+👤 @rr.yamamoto  (UD391F0SU)
+  🪪 Real name : 山本 裕司 / Yuji Yamamoto
+  📧 Email     : rr.yamamoto@gmail.com
+  💼 Title     : Flutter/Firebase/税金
+  🌏 TZ        : Asia/Tokyo (UTC+9)
+  💭 Status    : (empty)
+```
+
 `--json` 出力の byte 表現は後方互換契約として安定です (scripting / AI 用)。
-`--human` は UX 改善で随時整形が変わります。色は `process.stdout.isTTY` /
-`NO_COLOR` / `SLACK_CHAN_NO_COLOR` で自動的に on/off 切り替えられます。
+`--human` / `--rich` は UX 改善で随時整形が変わります。色は
+`process.stdout.isTTY` / `NO_COLOR` / `SLACK_CHAN_NO_COLOR` で、絵文字は
+`process.stdout.isTTY` / `SLACK_CHAN_NO_EMOJI` で独立に on/off 切り替え可能です
+(`--rich` で絵文字を抑止すると `--human` 相当のレイアウトに戻ります)。
 
 > **配布チャネルの設計判断**は
 > [`docs/decisions/0010-plugin-distribution.md`](docs/decisions/0010-plugin-distribution.md)

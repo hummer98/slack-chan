@@ -1,8 +1,8 @@
 /**
- * 出力フォーマット。CLI `--json|--toon|--human` と対応（docs/seed.md §3.5）。
+ * 出力フォーマット。CLI `--json|--toon|--human|--rich` と対応（docs/seed.md §3.5、ADR-0014）。
  */
-export type OutputFormat = "jsonl" | "toon" | "human";
-export const OUTPUT_FORMATS: readonly OutputFormat[] = ["jsonl", "toon", "human"];
+export type OutputFormat = "jsonl" | "toon" | "human" | "rich";
+export const OUTPUT_FORMATS: readonly OutputFormat[] = ["jsonl", "toon", "human", "rich"];
 
 /**
  * トークン保管バックエンド。`src/secrets/factory.ts` の `TokenStoreKind` と

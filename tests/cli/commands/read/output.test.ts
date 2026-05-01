@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { renderMessagesHuman } from "../../../../src/cli/commands/read/output.ts";
+import {
+  renderMessagesHuman,
+  renderMessagesRich,
+} from "../../../../src/cli/commands/read/output.ts";
 import * as channelsDao from "../../../../src/storage/dao/channels.ts";
 import * as usersDao from "../../../../src/storage/dao/users.ts";
 import { openDatabase } from "../../../../src/storage/db.ts";
@@ -145,6 +148,84 @@ describe("renderMessagesHuman", () => {
         tz: "Asia/Tokyo",
       });
       expect(out).toBe("");
+    } finally {
+      db.close();
+    }
+  });
+});
+
+describe("renderMessagesRich", () => {
+  it("emits 📅 date header + indented entry + 4-sp body", () => {
+    const db = openDatabase({ path: ":memory:" });
+    try {
+      channelsDao.upsert(db, {
+        team_id: TEAM,
+        channel_id: "C01",
+        name: "general",
+        type: "public_channel",
+        topic: null,
+        purpose: null,
+        is_member: 1,
+        last_synced_ts: null,
+        fetched_at: 0,
+      });
+      usersDao.upsert(db, {
+        team_id: TEAM,
+        user_id: "U1",
+        name: "alice",
+        real_name: "Alice",
+        email: null,
+        profile_json: null,
+        fetched_at: 0,
+      });
+      const out = renderMessagesRich([row({})], {
+        team_id: TEAM,
+        db,
+        isTTY: false,
+        emojiEnabled: true,
+        tz: "Asia/Tokyo",
+      });
+      expect(out).toBe("📅 2026-04-30\n  12:00:23  #general  @alice\n    hello\n");
+    } finally {
+      db.close();
+    }
+  });
+
+  it("emoji disabled: date header has no glyph, thread falls back to ⤷ thread", () => {
+    const db = openDatabase({ path: ":memory:" });
+    try {
+      const out = renderMessagesRich([row({ thread_ts: "1777518000.000000" })], {
+        team_id: TEAM,
+        db,
+        isTTY: false,
+        emojiEnabled: false,
+        tz: "Asia/Tokyo",
+      });
+      const lines = out.split("\n");
+      expect(lines[0]).toBe("2026-04-30");
+      expect(lines[1]).toContain("⤷ thread");
+    } finally {
+      db.close();
+    }
+  });
+
+  it("two messages on the same date share one date header", () => {
+    const db = openDatabase({ path: ":memory:" });
+    try {
+      const out = renderMessagesRich(
+        [row({ ts: "1777518023.000000" }), row({ ts: "1777518100.000000", text: "next" })],
+        {
+          team_id: TEAM,
+          db,
+          isTTY: false,
+          emojiEnabled: true,
+          tz: "Asia/Tokyo",
+        },
+      );
+      const headers = out.split("\n").filter((l) => l.startsWith("📅"));
+      expect(headers.length).toBe(1);
+      expect(out).toContain("hello");
+      expect(out).toContain("next");
     } finally {
       db.close();
     }

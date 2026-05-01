@@ -4,6 +4,7 @@ import type { MergedHit } from "../../../../src/cli/commands/search/merge.ts";
 import {
   extractQueryTokens,
   renderSearchHumanFromHits,
+  renderSearchRichFromHits,
   writeSearchOutput,
 } from "../../../../src/cli/commands/search/output.ts";
 import * as channelsDao from "../../../../src/storage/dao/channels.ts";
@@ -180,6 +181,72 @@ describe("writeSearchOutput / human format", () => {
       }
       expect(s).toContain('"text":"find me here"');
       expect(s).toContain('"source":"cache"');
+    } finally {
+      db.close();
+    }
+  });
+});
+
+describe("renderSearchRichFromHits", () => {
+  it("emits 📅 date header + indented entry + body with highlight", () => {
+    const db = setupDb();
+    try {
+      const out = renderSearchRichFromHits([hit({})], {
+        team_id: TEAM,
+        db,
+        query: "find",
+        isTTY: false,
+        emojiEnabled: true,
+        tz: "Asia/Tokyo",
+      });
+      const lines = out.split("\n");
+      expect(lines[0]).toBe("📅 2026-04-30");
+      expect(lines[1]).toBe("  12:00:23  #general  @alice");
+      expect(lines[2]).toBe("    find me here");
+    } finally {
+      db.close();
+    }
+  });
+
+  it("emoji disabled: no 📅, header reduces to plain date", () => {
+    const db = setupDb();
+    try {
+      const out = renderSearchRichFromHits([hit({})], {
+        team_id: TEAM,
+        db,
+        query: "find",
+        isTTY: false,
+        emojiEnabled: false,
+        tz: "Asia/Tokyo",
+      });
+      expect(out.split("\n")[0]).toBe("2026-04-30");
+      expect(out).not.toContain("📅");
+    } finally {
+      db.close();
+    }
+  });
+
+  it("writeSearchOutput format=rich routes to rich renderer", () => {
+    const db = setupDb();
+    try {
+      const stream = new PassThrough();
+      const chunks: string[] = [];
+      stream.on("data", (chunk) => chunks.push(String(chunk)));
+      writeSearchOutput({
+        merged: [hit({})],
+        format: "rich",
+        stdout: stream,
+        team_id: TEAM,
+        db,
+        query: "find",
+        isTTY: false,
+        emojiEnabled: true,
+        tz: "Asia/Tokyo",
+      });
+      stream.end();
+      const out = chunks.join("");
+      expect(out).toContain("📅 2026-04-30");
+      expect(out).toContain("find me here");
     } finally {
       db.close();
     }
