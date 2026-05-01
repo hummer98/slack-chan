@@ -68,6 +68,7 @@ function makeEffects(opts: TestEffectsOpts): Effects {
       });
       return client;
     },
+    isTTY: () => false,
   };
 }
 
@@ -132,6 +133,7 @@ describe("config workspace add", () => {
           createTokenStore: () => store,
           resolveDefaultTokensStore: defaultResolveDefaultTokensStore,
           createSlackClient: (team_id, token) => new SlackClient({ team_id, token }),
+          isTTY: () => false,
         };
         await expect(
           workspaceAddHandler(makeCtx({ rest: [`--token=${badToken}`] }), effects),
@@ -312,6 +314,7 @@ describe("config workspace add", () => {
         createTokenStore: () => store,
         resolveDefaultTokensStore: defaultResolveDefaultTokensStore,
         createSlackClient: (team_id, token) => new SlackClient({ team_id, token }),
+        isTTY: () => false,
       };
       const code = await workspaceAddHandler(
         makeCtx({ rest: ["--token=xoxb-test-1234567890abcd"] }),

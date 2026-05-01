@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- (placeholder)
+
+### Changed
+
+- (placeholder)
+
+### Fixed
+
+- (placeholder)
+
+## [0.1.0] - 2026-05-01
+
+### Added
+
 - `.claude-plugin/plugin.json` と `.claude-plugin/marketplace.json` および
   `skills/slack-chan/SKILL.md` を追加し、本リポジトリを Claude Code plugin
   として配布できる構造を整備（`/plugin marketplace add hummer98/slack-chan`
@@ -27,13 +41,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `conversations.open` で IM channel を開いて post / read 経路に再委譲
   (T013)
 - Homebrew tap auto-bump workflow + Formula template (`brew install hummer98/tap/slack-chan`) (T022)
+- `bin/slack-chan.js`（Node 薄ラッパ）と `bin/postinstall.js` を追加。
+  `npm i -g @hummer98/slack-chan` 1 発で **(a) GitHub Release から
+  platform 別 native binary を SHA256 検証付きで取得** し PATH に通った
+  `slack-chan` コマンドを用意、続けて **(b) `claude plugin marketplace
+  add hummer98/slack-chan` + `plugin install slack-chan@slack-chan-marketplace`
+  を user scope で自動実行** して Claude Code skill を登録する配布
+  フローを整備。ローカル開発 (`node_modules` 配下でない / `version=0.0.0`)
+  と `SLACK_CHAN_SKIP_POSTINSTALL=1` のときは postinstall を skip。
 
 ### Changed
 
-- (placeholder)
+- npm パッケージ名を `slack-chan` から `@hummer98/slack-chan` に scope 化。
+  以後の publish は OIDC Trusted Publishing 経由で `@hummer98/slack-chan`
+  として行われる。
+- npm tarball から `dist/slack-chan.js`（`--target=bun` の Bun 専用 bundle、
+  Node から実行不能）を除外。`build:js` script と `main` / `exports`
+  フィールドも削除。tarball には `bin/slack-chan.js`、`bin/postinstall.js`、
+  `skills/`、`.claude-plugin/`、`README.md`、`LICENSE`、`CHANGELOG.md`
+  のみが含まれる（native binary は postinstall が GitHub Release から
+  取得するため tarball には同梱されない）。
+- `.github/workflows/release.yml` から `bun run build:js` step を削除
+  （上記の `build:js` 削除に追従）。
 
 ### Fixed
 
-- (placeholder)
+- `config workspace remove` の TTY 検出をテスト時に明示的に注入できるよう
+  改修。`Effects` に `isTTY(): boolean` を追加し、ハンドラは
+  `effects.isTTY()` を `promptYesNo` に渡す。これにより `process.stdin.isTTY`
+  への暗黙依存が解消され、対話 shell から `npm publish` を叩いた際に
+  `prepublishOnly` の `bun run test` で
+  `(2) without --yes and TTY=false → UserError` テストが ~4 秒 hang した上で
+  失敗する事象が解消（実環境での利用時の挙動は変わらない）。
 
 [Unreleased]: https://github.com/hummer98/slack-chan/compare/HEAD...HEAD

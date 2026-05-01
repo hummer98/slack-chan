@@ -32,6 +32,14 @@ export interface Effects {
   resolveDefaultTokensStore(platform: NodeJS.Platform): TokensStore;
   /** Build a Slack client given (team_id, token). */
   createSlackClient(team_id: string, token: string): SlackClient;
+  /**
+   * Whether stdin is connected to a TTY. Used by destructive commands to
+   * decide between interactive prompt and refusing-without-`--yes`.
+   * Injected here so tests don't depend on ambient `process.stdin.isTTY`,
+   * which leaks into `prepublishOnly` (= `bun run test` spawned from an
+   * interactive `npm publish`) and made one test hang for 4s.
+   */
+  isTTY(): boolean;
 }
 
 export function defaultResolveDefaultTokensStore(platform: NodeJS.Platform): TokensStore {
@@ -48,5 +56,6 @@ export function defaultEffects(env: NodeJS.ProcessEnv = process.env): Effects {
     createTokenStore: (kind) => createTokenStore(kind, { configDir }),
     resolveDefaultTokensStore: defaultResolveDefaultTokensStore,
     createSlackClient: (team_id, token) => new SlackClient({ team_id, token }),
+    isTTY: () => Boolean((process.stdin as { isTTY?: boolean }).isTTY),
   };
 }

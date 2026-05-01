@@ -67,6 +67,7 @@ function makeEffects(opts: {
         });
         return client;
       },
+      isTTY: () => false,
     },
   };
 }
