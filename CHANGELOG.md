@@ -34,6 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- (placeholder)
+- `config workspace remove` の TTY 検出をテスト時に明示的に注入できるよう
+  改修。`Effects` に `isTTY(): boolean` を追加し、ハンドラは
+  `effects.isTTY()` を `promptYesNo` に渡す。これにより `process.stdin.isTTY`
+  への暗黙依存が解消され、対話 shell から `npm publish` を叩いた際に
+  `prepublishOnly` の `bun run test` で
+  `(2) without --yes and TTY=false → UserError` テストが ~4 秒 hang した上で
+  失敗する事象が解消（実環境での利用時の挙動は変わらない）。
 
 [Unreleased]: https://github.com/hummer98/slack-chan/compare/HEAD...HEAD

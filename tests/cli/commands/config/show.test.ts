@@ -37,6 +37,7 @@ function makeEffects(overrides: Partial<Effects>): Effects {
     createSlackClient: () => {
       throw new Error("createSlackClient not used in show tests");
     },
+    isTTY: () => false,
     ...overrides,
   };
 }

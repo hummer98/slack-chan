@@ -53,6 +53,7 @@ function makeEffects(opts: MakeOpts): Effects {
     },
     resolveDefaultTokensStore: defaultResolveDefaultTokensStore,
     createSlackClient: (team_id, token) => new SlackClient({ team_id, token }),
+    isTTY: () => false,
   };
 }
 
