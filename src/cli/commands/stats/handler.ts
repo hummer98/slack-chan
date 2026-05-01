@@ -1,4 +1,3 @@
-import { selectFormatter } from "../../../output/format.ts";
 import { assertValidTeamId } from "../../../secrets/index-file.ts";
 import * as workspacesDao from "../../../storage/dao/workspaces.ts";
 import type { WorkspaceRow } from "../../../storage/types.ts";
@@ -8,6 +7,7 @@ import type { CommandContext } from "../../router.ts";
 import { aggregateWorkspace } from "./aggregate.ts";
 import { parseStatsArgv } from "./argv.ts";
 import type { Effects } from "./effects.ts";
+import { renderStats } from "./output.ts";
 
 export async function statsHandler(ctx: CommandContext, effects: Effects): Promise<number> {
   parseStatsArgv(ctx.rest);
@@ -34,10 +34,9 @@ export async function statsHandler(ctx: CommandContext, effects: Effects): Promi
     targets = workspacesDao.list(db);
   }
 
-  const f = selectFormatter(ctx.format);
   for (const ws of targets) {
     const rec = aggregateWorkspace(db, ws, dbBytes);
-    effects.stdout.write(f.format(rec));
+    effects.stdout.write(renderStats(rec, ctx.format));
   }
   return EXIT_OK;
 }

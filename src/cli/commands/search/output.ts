@@ -1,5 +1,15 @@
+import type { Database } from "bun:sqlite";
 import type { OutputFormat } from "../../../config/types.ts";
+import { isColorEnabled, makeColors } from "../../../output/ansi.ts";
 import { selectFormatter } from "../../../output/format.ts";
+import {
+  formatTimeline,
+  type HighlightRange,
+  type TimelineEntry,
+} from "../../../output/human/index.ts";
+import * as channelsDao from "../../../storage/dao/channels.ts";
+import * as usersDao from "../../../storage/dao/users.ts";
+import type { ChannelRow } from "../../../storage/types.ts";
 import type { MergedHit } from "./merge.ts";
 
 export interface SearchHitRecord {
@@ -38,10 +48,33 @@ export interface WriteSearchOutputOpts {
   merged: MergedHit[];
   format: OutputFormat;
   stdout: NodeJS.WritableStream;
+  /** Required when format === "human". Used as substring source for highlight. */
+  query?: string;
+  /** Required when format === "human". DAO uses team_id to resolve labels. */
+  team_id?: string;
+  /** Required when format === "human". */
+  db?: Database;
+  isTTY?: boolean;
+  tz?: string;
 }
 
 export function writeSearchOutput(opts: WriteSearchOutputOpts): void {
   if (opts.merged.length === 0) return;
+  if (opts.format === "human") {
+    if (opts.team_id === undefined || opts.db === undefined) {
+      throw new Error("writeSearchOutput: team_id and db are required for --human");
+    }
+    opts.stdout.write(
+      renderSearchHumanFromHits(opts.merged, {
+        team_id: opts.team_id,
+        db: opts.db,
+        query: opts.query ?? "",
+        isTTY: opts.isTTY,
+        tz: opts.tz,
+      }),
+    );
+    return;
+  }
   const records = opts.merged.map(toSearchHitRecord);
   const f = selectFormatter(opts.format);
   if (typeof f.formatBatch === "function") {
@@ -50,5 +83,106 @@ export function writeSearchOutput(opts: WriteSearchOutputOpts): void {
   }
   for (const r of records) {
     opts.stdout.write(f.format(r));
+  }
+}
+
+interface RenderSearchHumanOpts {
+  team_id: string;
+  db: Database;
+  query: string;
+  isTTY?: boolean;
+  tz?: string;
+}
+
+export function renderSearchHumanFromHits(
+  hits: readonly MergedHit[],
+  opts: RenderSearchHumanOpts,
+): string {
+  const colors = makeColors(opts.isTTY === undefined ? isColorEnabled() : opts.isTTY);
+  const tz = opts.tz ?? defaultTz();
+  const tokens = extractQueryTokens(opts.query);
+  const channelCache = new Map<string, ChannelRow | null>();
+  const userCache = new Map<string, string>();
+  // Display oldest → newest like read does (LLM friendly).
+  const sorted = [...hits].sort((a, b) => (a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0));
+  const entries: TimelineEntry[] = sorted.map((hit) => {
+    let channelRow = channelCache.get(hit.channel_id);
+    if (channelRow === undefined) {
+      channelRow = channelsDao.getOne(opts.db, opts.team_id, hit.channel_id);
+      channelCache.set(hit.channel_id, channelRow);
+    }
+    const channel_label = channelLabel(channelRow, hit.channel_id);
+    let user_label: string;
+    if (hit.user_id === null) {
+      user_label = "(no user)";
+    } else if (userCache.has(hit.user_id)) {
+      user_label = userCache.get(hit.user_id) as string;
+    } else {
+      const u = usersDao.get(opts.db, opts.team_id, hit.user_id);
+      user_label = u?.name ? `@${u.name}` : hit.user_id;
+      userCache.set(hit.user_id, user_label);
+    }
+    return {
+      ts: hit.ts,
+      channel_label,
+      user_label,
+      text: hit.text,
+      is_thread: hit.thread_ts !== null,
+      tz,
+      highlight: hit.text !== null ? findHighlights(hit.text, tokens) : undefined,
+    };
+  });
+  return formatTimeline(entries, colors);
+}
+
+function channelLabel(row: ChannelRow | null, channel_id: string): string {
+  if (row === null) return channel_id;
+  if (row.type === "im") {
+    return row.name ? `@${row.name}` : channel_id;
+  }
+  return row.name ? `#${row.name}` : channel_id;
+}
+
+/**
+ * Strip Slack search operators (`channel:`, `from:`, `in:`, `before:`, `after:` etc.)
+ * and double-quote phrases, return remaining whitespace-split tokens.
+ * MVP: simple substring match — not the same as FTS5 trigram offsets.
+ */
+export function extractQueryTokens(query: string): string[] {
+  if (query.trim().length === 0) return [];
+  // Pull out quoted phrases (treat the whole phrase as one token).
+  const phrases: string[] = [];
+  const stripped = query.replace(/"([^"]+)"/g, (_, phrase) => {
+    phrases.push(phrase);
+    return " ";
+  });
+  // Drop operator tokens.
+  const operatorRe = /^(channel|from|in|to|before|after|on|during|has|with):/i;
+  const bare = stripped.split(/\s+/u).filter((t) => t.length > 0 && !operatorRe.test(t));
+  return [...phrases, ...bare].filter((t) => t.length > 0);
+}
+
+function findHighlights(text: string, tokens: readonly string[]): HighlightRange[] {
+  const ranges: HighlightRange[] = [];
+  const lower = text.toLowerCase();
+  for (const tok of tokens) {
+    const t = tok.toLowerCase();
+    if (t.length === 0) continue;
+    let idx = 0;
+    while (true) {
+      const found = lower.indexOf(t, idx);
+      if (found === -1) break;
+      ranges.push({ start: found, end: found + t.length });
+      idx = found + t.length;
+    }
+  }
+  return ranges;
+}
+
+function defaultTz(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
   }
 }

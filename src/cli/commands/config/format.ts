@@ -1,6 +1,7 @@
 import type { OutputFormat } from "../../../config/types.ts";
 import { isColorEnabled, makeColors } from "../../../output/ansi.ts";
 import { selectFormatter } from "../../../output/format.ts";
+import { formatTable } from "../../../output/human/index.ts";
 
 export interface ConfigShowEnvOverride {
   source: "env";
@@ -111,12 +112,13 @@ function renderWorkspaceListHuman(
   if (rows.length === 0) {
     return `${colors.dim("(no workspaces registered)")}\n`;
   }
-  const lines: string[] = [];
-  for (const r of rows) {
-    lines.push(colors.bold(`${r.team_id} (${r.name})`));
-    lines.push(`  default_channel = ${r.default_channel ?? "(none)"}`);
-    lines.push(`  tokens_store    = ${r.tokens_store}`);
-    lines.push(`  token           = ${r.token ?? "(not stored)"}`);
-  }
-  return `${lines.join("\n")}\n`;
+  const headers = ["TEAM_ID", "NAME", "DEFAULT_CHANNEL", "TOKENS_STORE", "TOKEN"];
+  const tableRows = rows.map((r) => [
+    r.team_id,
+    r.name,
+    r.default_channel ?? "(none)",
+    r.tokens_store,
+    r.token ?? "(not stored)",
+  ]);
+  return formatTable(headers, tableRows, colors);
 }

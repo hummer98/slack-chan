@@ -122,7 +122,7 @@ describe("statsHandler", () => {
     }
   });
 
-  it("(4a) --human で ANSI escape (dim) 出力", async () => {
+  it("(4a) --human は KV 整形で出力 (Workspace ヘッダ + Channels/Users/DB size 等)", async () => {
     seedWorkspaces(db, [{ team_id: "T01ABCDEF", name: "Acme", added_at: 1700000000 }]);
     const prevTty = (process.stdout as { isTTY?: boolean }).isTTY;
     const prevNo = process.env.NO_COLOR;
@@ -135,8 +135,20 @@ describe("statsHandler", () => {
       const code = await statsHandler(ctx, makeEffects({ db, stdout }));
       expect(code).toBe(0);
       const out = readBuffer(stdout);
+      // 旧仕様 (pretty JSON) の `"team_id":` は出ない
+      expect(out).not.toContain('"team_id":');
+      // 新仕様: Workspace ヘッダ + KV
+      expect(out).toContain("Workspace");
+      expect(out).toContain("T01ABCDEF");
+      expect(out).toContain("Acme");
+      expect(out).toContain("Channels");
+      expect(out).toContain("Messages");
+      expect(out).toContain("Users");
+      expect(out).toContain("Files");
+      expect(out).toContain("DB size");
+      // bold (Workspace 太字) の ANSI escape が入る
       const ESC = String.fromCharCode(0x1b);
-      expect(out.includes(`${ESC}[2m`)).toBe(true);
+      expect(out.includes(`${ESC}[1m`)).toBe(true);
     } finally {
       Object.defineProperty(process.stdout, "isTTY", { value: prevTty, configurable: true });
       if (prevNo !== undefined) process.env.NO_COLOR = prevNo;

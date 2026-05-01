@@ -1,12 +1,11 @@
 import { ErrorCode } from "@slack/web-api";
-import { selectFormatter } from "../../../output/format.ts";
 import type { UserRow } from "../../../storage/types.ts";
 import { CliError, InternalError, TransientError, UserError } from "../../errors.ts";
 import { EXIT_OK } from "../../exit-codes.ts";
 import type { CommandContext } from "../../router.ts";
 import { parseUserArgv, type UserArgs } from "./argv.ts";
 import type { Effects } from "./effects.ts";
-import type { UserResult } from "./output.ts";
+import { renderUser, type UserResult } from "./output.ts";
 import { newResolveUserSentinel, resolveUser } from "./resolveUser.ts";
 import { loadToken, resolveWorkspace } from "./workspace.ts";
 
@@ -149,7 +148,6 @@ export async function handleUser(ctx: CommandContext, effects: Effects): Promise
     },
   };
 
-  const formatter = selectFormatter(ctx.format);
-  process.stdout.write(formatter.format(result));
+  process.stdout.write(renderUser(result, ctx.format));
   return EXIT_OK;
 }

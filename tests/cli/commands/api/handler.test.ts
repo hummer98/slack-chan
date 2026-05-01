@@ -302,4 +302,21 @@ describe("handleApi", () => {
       expect((e as UserError).message).toContain("no token stored");
     }
   });
+
+  it("(14) --human: api は pretty JSON + dim を維持 (ADR-0013 fallback)", async () => {
+    const payload = {
+      ok: true,
+      channel: { id: "C0123ABCDEF", name: "general" },
+    } as WebAPICallResult;
+    const { effects } = makeEffects({ apiCall: { mode: "ok", response: payload } });
+    const code = await handleApi(
+      makeCtx({ format: "human", rest: ["conversations.info", "channel=C0123ABCDEF"] }),
+      effects,
+    );
+    expect(code).toBe(0);
+    const out = stdout();
+    // pretty JSON: 2-space indented + "ok": true 形
+    expect(out).toContain('"ok": true');
+    expect(out).toContain('"channel":');
+  });
 });
