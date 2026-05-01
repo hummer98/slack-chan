@@ -12,6 +12,10 @@ dist/
 node_modules/
 .*.bun-build
 
+# postinstall が GitHub Release から DL する native binary (npm i -g 時のみ生成)
+bin/slack-chan-native
+bin/slack-chan-native.tmp
+
 # OS
 .DS_Store
 Thumbs.db
