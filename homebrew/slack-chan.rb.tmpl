@@ -1,0 +1,55 @@
+class SlackChan < Formula
+  desc "Slack interface for Claude — multi-workspace, default channels, persistent local cache"
+  homepage "https://github.com/hummer98/slack-chan"
+  version "${VERSION}"
+  license "MIT"
+
+  on_macos do
+    on_arm do
+      url "https://github.com/hummer98/slack-chan/releases/download/v#{version}/slack-chan-#{version}-bun-darwin-arm64"
+      sha256 "${SHA256_DARWIN_ARM64}"
+
+      def install
+        bin.install "slack-chan-#{version}-bun-darwin-arm64" => "slack-chan"
+      end
+    end
+
+    on_intel do
+      url "https://github.com/hummer98/slack-chan/releases/download/v#{version}/slack-chan-#{version}-bun-darwin-x64"
+      sha256 "${SHA256_DARWIN_X64}"
+
+      def install
+        bin.install "slack-chan-#{version}-bun-darwin-x64" => "slack-chan"
+      end
+    end
+  end
+
+  on_linux do
+    on_arm do
+      url "https://github.com/hummer98/slack-chan/releases/download/v#{version}/slack-chan-#{version}-bun-linux-arm64"
+      sha256 "${SHA256_LINUX_ARM64}"
+
+      def install
+        bin.install "slack-chan-#{version}-bun-linux-arm64" => "slack-chan"
+      end
+    end
+
+    on_intel do
+      url "https://github.com/hummer98/slack-chan/releases/download/v#{version}/slack-chan-#{version}-bun-linux-x64"
+      sha256 "${SHA256_LINUX_X64}"
+
+      def install
+        bin.install "slack-chan-#{version}-bun-linux-x64" => "slack-chan"
+      end
+    end
+  end
+
+  livecheck do
+    url :url
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/slack-chan --version")
+  end
+end

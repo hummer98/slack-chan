@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `<user>` を Uxxx / email / @name から user_id に解決し
   `conversations.open` で IM channel を開いて post / read 経路に再委譲
   (T013)
+- Homebrew tap auto-bump workflow + Formula template (`brew install hummer98/tap/slack-chan`) (T022)
 
 ### Changed
 
