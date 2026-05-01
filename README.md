@@ -27,17 +27,30 @@ bun run dev -- --help
 bun run typecheck
 bun run lint
 bun run test
-bun run build:js         # → dist/slack-chan.js (npm publish bundle)
-bun ./dist/slack-chan.js --version
 bun run build:bin        # → dist/slack-chan (single binary, bun --compile)
 ./dist/slack-chan --version
 ```
+
+### Install (recommended): `npm i -g`
+
+```sh
+npm i -g @hummer98/slack-chan
+```
+
+`postinstall` が走り、以下を自動でセットアップします:
+
+1. GitHub Release から **platform 別 native binary** を DL（Bun runtime 焼き込み済み・SHA256 検証あり）→ `slack-chan` コマンドが PATH で使えるようになる
+2. `claude` が PATH にあれば **Claude Code plugin / skill を user scope で登録** する（marketplace add + plugin install を自動実行）
+
+`postinstall` をスキップしたい場合は `SLACK_CHAN_SKIP_POSTINSTALL=1 npm i -g @hummer98/slack-chan`。
 
 ### Install via Homebrew
 
 ```sh
 brew install hummer98/tap/slack-chan
 ```
+
+Bun 不要・ネイティブバイナリのみが欲しい場合はこちら（Claude plugin の登録は別途必要）。
 
 > 初回 release 後に有効化されます (それまでは `hummer98/homebrew-tap` の
 > Formula が空のため tap が解決できません)。
@@ -76,20 +89,21 @@ Claude Code 起動後、`/help` の plugins セクションに `slack-chan:slack
 
 ### Marketplace 経由で install（通常ユーザ向け）
 
-`hummer98/slack-chan` リポジトリは single-plugin marketplace として
-構成されているため、Claude Code から marketplace を追加してそのまま
-install できます:
+通常の経路は **`npm i -g @hummer98/slack-chan`** です。npm の `postinstall` が
+`claude plugin marketplace add` + `claude plugin install` を自動で走らせるため、
+利用者が個別にこれらを叩く必要はありません。詳細は上の [Install (recommended): `npm i -g`](#install-recommended-npm-i--g) を参照。
+
+`claude` が PATH に居なかった場合や、後から手動で plugin だけ登録し直したい場合は、
+Claude Code のプロンプトから直接：
 
 ```sh
-# Claude Code のプロンプトから:
 /plugin marketplace add hummer98/slack-chan
 /plugin install slack-chan@slack-chan-marketplace
 ```
 
-CLI 本体（`slack-chan` バイナリ）は別途 npm か GitHub Release から install
-してください（`## Quick start` の `bun run build:bin` か `npm install -g
-slack-chan`）。plugin は CLI を `Bash(slack-chan:*)` 経由で呼ぶだけで、
-バイナリ自体は同梱されません。
+`hummer98/slack-chan` リポジトリは single-plugin marketplace として構成されています。
+plugin は CLI を `Bash(slack-chan:*)` 経由で呼ぶだけなので、バイナリ自体は plugin
+には同梱されず、`npm i -g` か Homebrew 経由で別途 PATH に通します。
 
 ### Token と config の登録
 

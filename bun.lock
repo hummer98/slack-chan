@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "slack-chan",
+      "name": "@hummer98/slack-chan",
       "dependencies": {
         "@slack/web-api": "^7.15.1",
         "smol-toml": "^1",
