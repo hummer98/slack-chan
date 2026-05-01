@@ -91,3 +91,23 @@ describe("renderUser human format", () => {
     expect(out).toContain("Status    : :calendar: in a meeting");
   });
 });
+
+describe("renderUser rich format", () => {
+  it("full profile with emoji glyphs", () => {
+    const out = renderUser(res(), "rich", { isTTY: false, emojiEnabled: true });
+    expect(out).toContain("👤 @rr.yamamoto  (UD391F0SU)");
+    expect(out).toContain("  🪪 Real name : 山本 裕司 / Yuji Yamamoto");
+    expect(out).toContain("  📧 Email     : rr.yamamoto@gmail.com");
+    expect(out).toContain("  💼 Title     : Flutter/Firebase/税金");
+    expect(out).toContain("  🌏 TZ        : Asia/Tokyo (UTC+9)");
+    expect(out).toContain("  💭 Status    : (empty)");
+  });
+
+  it("emoji disabled: header has no prefix, KV has no glyph column", () => {
+    const out = renderUser(res(), "rich", { isTTY: false, emojiEnabled: false });
+    expect(out).toContain("@rr.yamamoto  (UD391F0SU)");
+    expect(out).not.toContain("👤");
+    expect(out).not.toContain("📧");
+    expect(out).toContain("  Real name : 山本 裕司 / Yuji Yamamoto");
+  });
+});

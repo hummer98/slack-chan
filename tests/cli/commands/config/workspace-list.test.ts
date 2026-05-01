@@ -149,6 +149,32 @@ describe("config workspace list", () => {
     expect(parsed.token).toBeNull();
   });
 
+  it("(5) rich format: 🏢 banner + table (with ANSI; non-TTY → no color but emoji from default-off)", async () => {
+    const cfg: Config = {
+      default_workspace: null,
+      workspaces: {
+        T01ABCDEF: { name: "Acme", default_channel: "C1", tokens_store: "file" },
+      },
+      output: { format: "rich", cache_window_days: 7 },
+    };
+    await saveConfig(cfg, { configDir: dir });
+    const store = new MemoryTokenStore();
+    await store.set("T01ABCDEF", "xoxb-test-1234567890abcd");
+    const code = await workspaceListHandler(
+      makeCtx({ format: "rich" }),
+      makeEffects({ configDir: dir, createTokenStore: () => store }),
+    );
+    expect(code).toBe(0);
+    const text = out();
+    const lines = text.split("\n");
+    // Banner is the first line; non-TTY suppresses both color and emoji,
+    // so the banner reduces to plain "Workspaces".
+    expect(lines[0]).toBe("Workspaces");
+    expect(lines[1]).toContain("TEAM_ID");
+    expect(lines[2]).toMatch(/^─+/);
+    expect(lines[3]).toContain("T01ABCDEF");
+  });
+
   it("groups team_ids by tokens_store kind so the factory only builds each backend once", async () => {
     const cfg: Config = {
       default_workspace: null,

@@ -15,6 +15,15 @@ export function isColorEnabled(stream: { isTTY?: boolean } = process.stdout): bo
   return stream.isTTY === true;
 }
 
+/**
+ * Whether to render emoji glyphs (ADR-0014). Independent from `isColorEnabled`:
+ * `NO_COLOR` does not disable emoji, only `SLACK_CHAN_NO_EMOJI` and non-TTY do.
+ */
+export function isEmojiEnabled(stream: { isTTY?: boolean } = process.stdout): boolean {
+  if (process.env.SLACK_CHAN_NO_EMOJI !== undefined) return false;
+  return stream.isTTY === true;
+}
+
 export interface ColorFns {
   red(s: string): string;
   yellow(s: string): string;

@@ -1,7 +1,8 @@
 import type { OutputFormat } from "../../../config/types.ts";
-import { isColorEnabled, makeColors } from "../../../output/ansi.ts";
+import { isColorEnabled, isEmojiEnabled, makeColors } from "../../../output/ansi.ts";
 import { selectFormatter } from "../../../output/format.ts";
 import { formatTable } from "../../../output/human/index.ts";
+import { formatRichHeader, formatRichTable, getGlyphs } from "../../../output/rich/index.ts";
 
 export interface ConfigShowEnvOverride {
   source: "env";
@@ -35,11 +36,13 @@ export interface WorkspaceListRecord {
 
 interface RenderHumanOpts {
   isTTY?: boolean;
+  /** Override emoji detection (only affects "rich"). */
+  emojiEnabled?: boolean;
 }
 
 /**
- * Render `config show` for the given format. Human mode adds suffixes like
- * `(env: SLACK_CHAN_DEFAULT_WORKSPACE)` after each overridden value;
+ * Render `config show` for the given format. Human / rich modes add suffixes
+ * like `(env: SLACK_CHAN_DEFAULT_WORKSPACE)` after each overridden value;
  * jsonl/toon modes carry the override as a sibling `*_override` field so
  * downstream tooling can detect the env source structurally.
  */
@@ -48,11 +51,14 @@ export function renderConfigShow(
   format: OutputFormat,
   opts: RenderHumanOpts = {},
 ): string {
-  if (format !== "human") {
+  if (format !== "human" && format !== "rich") {
     const f = selectFormatter(format);
     return f.format(record);
   }
-  return renderConfigShowHuman(record, opts);
+  if (format === "human") {
+    return renderConfigShowHuman(record, opts);
+  }
+  return renderConfigShowRich(record, opts);
 }
 
 function renderConfigShowHuman(record: ConfigShowRecord, opts: RenderHumanOpts): string {
@@ -88,20 +94,78 @@ function renderConfigShowHuman(record: ConfigShowRecord, opts: RenderHumanOpts):
   return `${lines.join("\n")}\n`;
 }
 
+function renderConfigShowRich(record: ConfigShowRecord, opts: RenderHumanOpts): string {
+  const colors = makeColors(opts.isTTY === undefined ? isColorEnabled() : opts.isTTY);
+  const glyphs = getGlyphs(opts.emojiEnabled ?? isEmojiEnabled());
+  const lines: string[] = [];
+  const dwSuffix = record.default_workspace_override
+    ? ` ${colors.dim(`(env: ${record.default_workspace_override.env})`)}`
+    : "";
+  lines.push(
+    `${colors.bold(colors.cyan("default_workspace"))} = ${record.default_workspace ?? "(none)"}${dwSuffix}`,
+  );
+  if (record.default_channel_override) {
+    lines.push(
+      `${colors.bold(colors.cyan("default_channel"))}   ${colors.dim(`(env: ${record.default_channel_override.env})`)}`,
+    );
+  }
+  const ofSuffix = record.output_format_override
+    ? ` ${colors.dim(`(env: ${record.output_format_override.env})`)}`
+    : "";
+  lines.push(
+    `${colors.bold(colors.cyan("output.format"))}     = ${record.output.format}${ofSuffix}`,
+  );
+  lines.push(
+    `${colors.bold(colors.cyan("output.cache_window_days"))} = ${record.output.cache_window_days}`,
+  );
+  lines.push("");
+  if (record.workspaces.length === 0) {
+    lines.push(colors.dim("workspaces: (empty)"));
+  } else {
+    const wsHeader = formatRichHeader("workspaces:", glyphs.workspaceListHeader, colors);
+    lines.push(wsHeader);
+    for (const ws of record.workspaces) {
+      lines.push(`  - ${colors.bold(ws.team_id)} (${ws.name})`);
+      lines.push(`      default_channel = ${ws.default_channel ?? "(none)"}`);
+      lines.push(`      tokens_store    = ${ws.tokens_store}`);
+    }
+  }
+  return `${lines.join("\n")}\n`;
+}
+
 /**
  * Render `config workspace list`. Each row is emitted independently in
- * jsonl/toon; human mode produces an aligned ASCII table.
+ * jsonl/toon; human mode produces an aligned ASCII table; rich mode adds
+ * a colored banner above the table and bold + cyan column headers.
  */
 export function renderWorkspaceList(
   rows: readonly WorkspaceListRecord[],
   format: OutputFormat,
   opts: RenderHumanOpts = {},
 ): string {
-  if (format !== "human") {
+  if (format !== "human" && format !== "rich") {
     const f = selectFormatter(format);
     return rows.map((r) => f.format(r)).join("");
   }
-  return renderWorkspaceListHuman(rows, opts);
+  if (format === "human") {
+    return renderWorkspaceListHuman(rows, opts);
+  }
+  return renderWorkspaceListRich(rows, opts);
+}
+
+function buildWorkspaceTable(rows: readonly WorkspaceListRecord[]): {
+  headers: string[];
+  tableRows: string[][];
+} {
+  const headers = ["TEAM_ID", "NAME", "DEFAULT_CHANNEL", "TOKENS_STORE", "TOKEN"];
+  const tableRows = rows.map((r) => [
+    r.team_id,
+    r.name,
+    r.default_channel ?? "(none)",
+    r.tokens_store,
+    r.token ?? "(not stored)",
+  ]);
+  return { headers, tableRows };
 }
 
 function renderWorkspaceListHuman(
@@ -112,13 +176,20 @@ function renderWorkspaceListHuman(
   if (rows.length === 0) {
     return `${colors.dim("(no workspaces registered)")}\n`;
   }
-  const headers = ["TEAM_ID", "NAME", "DEFAULT_CHANNEL", "TOKENS_STORE", "TOKEN"];
-  const tableRows = rows.map((r) => [
-    r.team_id,
-    r.name,
-    r.default_channel ?? "(none)",
-    r.tokens_store,
-    r.token ?? "(not stored)",
-  ]);
+  const { headers, tableRows } = buildWorkspaceTable(rows);
   return formatTable(headers, tableRows, colors);
+}
+
+function renderWorkspaceListRich(
+  rows: readonly WorkspaceListRecord[],
+  opts: RenderHumanOpts,
+): string {
+  const colors = makeColors(opts.isTTY === undefined ? isColorEnabled() : opts.isTTY);
+  const glyphs = getGlyphs(opts.emojiEnabled ?? isEmojiEnabled());
+  if (rows.length === 0) {
+    return `${colors.dim("(no workspaces registered)")}\n`;
+  }
+  const banner = formatRichHeader("Workspaces", glyphs.workspaceListHeader, colors);
+  const { headers, tableRows } = buildWorkspaceTable(rows);
+  return `${banner}\n${formatRichTable(headers, tableRows, colors)}`;
 }

@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- (placeholder)
+
+### Changed
+
+- (placeholder)
+
+### Fixed
+
+- (placeholder)
+
+## [0.1.0] - 2026-05-01
+
+### Added
+
 - `.claude-plugin/plugin.json` と `.claude-plugin/marketplace.json` および
   `skills/slack-chan/SKILL.md` を追加し、本リポジトリを Claude Code plugin
   として配布できる構造を整備（`/plugin marketplace add hummer98/slack-chan`

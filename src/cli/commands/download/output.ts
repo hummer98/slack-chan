@@ -1,7 +1,8 @@
 import type { OutputFormat } from "../../../config/types.ts";
-import { type ColorFns, isColorEnabled, makeColors } from "../../../output/ansi.ts";
+import { type ColorFns, isColorEnabled, isEmojiEnabled, makeColors } from "../../../output/ansi.ts";
 import { selectFormatter } from "../../../output/format.ts";
 import { humanBytes } from "../../../output/human/index.ts";
+import { getGlyphs, type RichGlyphs } from "../../../output/rich/index.ts";
 
 /**
  * Per-file record emitted on stdout when `download` succeeds. Always
@@ -28,6 +29,8 @@ export interface DownloadResult {
 
 interface RenderDownloadOpts {
   isTTY?: boolean;
+  /** Override emoji detection (only affects `--rich`). */
+  emojiEnabled?: boolean;
 }
 
 export function renderDownloadResult(
@@ -35,11 +38,15 @@ export function renderDownloadResult(
   format: OutputFormat,
   opts: RenderDownloadOpts = {},
 ): string {
-  if (format !== "human") {
+  if (format !== "human" && format !== "rich") {
     return selectFormatter(format).format(result);
   }
   const colors = makeColors(opts.isTTY === undefined ? isColorEnabled() : opts.isTTY);
-  return renderDownloadResultHuman(result, colors);
+  if (format === "human") {
+    return renderDownloadResultHuman(result, colors);
+  }
+  const glyphs = getGlyphs(opts.emojiEnabled ?? isEmojiEnabled());
+  return renderDownloadResultRich(result, colors, glyphs);
 }
 
 export function renderDownloadResultHuman(result: DownloadResult, colors: ColorFns): string {
@@ -53,4 +60,25 @@ export function renderDownloadResultHuman(result: DownloadResult, colors: ColorF
   }
   const marker = colors.green("✓");
   return `${marker} ${nameLabel} → ${result.local_path}${sizePart}\n`;
+}
+
+export function renderDownloadResultRich(
+  result: DownloadResult,
+  colors: ColorFns,
+  glyphs: RichGlyphs,
+): string {
+  const sizePart =
+    typeof result.size_bytes === "number"
+      ? ` ${colors.dim(`(${humanBytes(result.size_bytes)})`)}`
+      : "";
+  const nameLabel =
+    result.name !== undefined
+      ? `${colors.bold(result.file_id)} ${colors.dim(`(${result.name})`)}`
+      : colors.bold(result.file_id);
+  if (result.skipped) {
+    const marker = colors.dim(`${glyphs.downloadSkipped} skipped:`);
+    return `${marker} ${nameLabel} ${colors.dim("→")} ${result.local_path}${sizePart}\n`;
+  }
+  const marker = colors.green(colors.bold(glyphs.downloadOk));
+  return `${marker} ${nameLabel} ${colors.dim("→")} ${result.local_path}${sizePart}\n`;
 }

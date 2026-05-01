@@ -99,4 +99,18 @@ describe("parseGlobalFlags", () => {
     expect(r.subcommand).toBe("read");
     expect(r.rest).toEqual(["foo"]);
   });
+
+  it("(14) --rich sets format=rich", () => {
+    const r = parseGlobalFlags(["--rich", "read"]);
+    expect(r.global.format).toBe("rich");
+    expect(r.subcommand).toBe("read");
+  });
+
+  it("(14b) --rich + --human is mutually exclusive", () => {
+    expect(() => parseGlobalFlags(["--rich", "--human"])).toThrow(/mutually exclusive/);
+  });
+
+  it("(14c) --rich + --json is mutually exclusive", () => {
+    expect(() => parseGlobalFlags(["--rich", "--json"])).toThrow(/mutually exclusive/);
+  });
 });

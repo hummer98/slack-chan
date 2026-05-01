@@ -1,6 +1,6 @@
 {
   "name": "@hummer98/slack-chan",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Slack interface for Claude — multi-workspace, default channels, persistent cache.",
   "author": "Yuji Yamamoto <yuji.yamamoto@tayorie.jp> (https://github.com/hummer98)",
   "license": "MIT",

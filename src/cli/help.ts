@@ -32,6 +32,7 @@ Global flags:
   --json               Emit JSONL (default)
   --toon               Emit TOON (currently delegates to JSONL — see ADR-0009)
   --human              Emit human-readable formatting (timeline / table / card; see ADR-0013)
+  --rich               Like --human but with emoji icons and stronger colors (see ADR-0014)
   --verbose            Enable debug-level logging on stderr
   -h, --help           Show this help and exit
   -v, --version        Show version and exit

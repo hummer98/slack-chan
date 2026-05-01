@@ -54,3 +54,28 @@ describe("renderDownloadResult human format", () => {
     expect(out).toContain('"local_path":');
   });
 });
+
+describe("renderDownloadResult rich format", () => {
+  it("new download with emoji uses ✅ marker", () => {
+    const out = renderDownloadResult(res(), "rich", { isTTY: false, emojiEnabled: true });
+    expect(out.startsWith("✅ ")).toBe(true);
+    expect(out).toContain("F08K9XZAB1B");
+    expect(out).toContain("screenshot.png");
+    expect(out).toContain("→");
+    expect(out).toContain("123.4 KiB");
+  });
+
+  it("skipped download uses ↺ marker", () => {
+    const out = renderDownloadResult(res({ skipped: true }), "rich", {
+      isTTY: false,
+      emojiEnabled: true,
+    });
+    expect(out).toContain("↺ skipped:");
+  });
+
+  it("emoji disabled: ✅ falls back to ✓", () => {
+    const out = renderDownloadResult(res(), "rich", { isTTY: false, emojiEnabled: false });
+    expect(out.startsWith("✓ ")).toBe(true);
+    expect(out).not.toContain("✅");
+  });
+});

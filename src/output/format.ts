@@ -25,5 +25,9 @@ export function selectFormatter(format: OutputFormat): Formatter {
       return new ToonFormatter();
     case "human":
       return new HumanFormatter();
+    case "rich":
+      // ADR-0014: per-command renderers handle "rich" upstream; record-level
+      // fallback (api / post / sync) reuses HumanFormatter (pretty JSON + dim).
+      return new HumanFormatter();
   }
 }
