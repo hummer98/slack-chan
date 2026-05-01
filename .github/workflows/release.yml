@@ -77,9 +77,6 @@ jobs:
           bun run lint
           bun run test
 
-      - name: Build npm bundle (dist/slack-chan.js)
-        run: bun run build:js
-
       - name: Publish to npm (OIDC Trusted Publishing)
         env:
           IS_DRY: ${{ steps.ctx.outputs.is_dry }}
