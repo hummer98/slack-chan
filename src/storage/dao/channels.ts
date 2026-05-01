@@ -43,3 +43,50 @@ export function getLastSyncedTs(db: Database, team_id: string, channel_id: strin
     .get(team_id, channel_id);
   return row ? row.last_synced_ts : null;
 }
+
+export function getOne(db: Database, team_id: string, channel_id: string): ChannelRow | null {
+  const row = db
+    .query<ChannelRow, [string, string]>(
+      "SELECT * FROM channels WHERE team_id = ? AND channel_id = ?",
+    )
+    .get(team_id, channel_id);
+  return row ?? null;
+}
+
+export function getByName(db: Database, team_id: string, name: string): ChannelRow | null {
+  const row = db
+    .query<ChannelRow, [string, string]>(
+      "SELECT * FROM channels WHERE team_id = ? AND name = ? " +
+        "ORDER BY COALESCE(fetched_at, 0) DESC LIMIT 1",
+    )
+    .get(team_id, name);
+  return row ?? null;
+}
+
+export function countByTeam(
+  db: Database,
+  team_id: string,
+  opts: { is_member?: 0 | 1 } = {},
+): number {
+  if (opts.is_member === undefined) {
+    const row = db
+      .query<{ n: number }, [string]>("SELECT COUNT(*) AS n FROM channels WHERE team_id = ?")
+      .get(team_id);
+    return row?.n ?? 0;
+  }
+  const row = db
+    .query<{ n: number }, [string, number]>(
+      "SELECT COUNT(*) AS n FROM channels WHERE team_id = ? AND is_member = ?",
+    )
+    .get(team_id, opts.is_member);
+  return row?.n ?? 0;
+}
+
+export function maxLastSyncedTs(db: Database, team_id: string): string | null {
+  const row = db
+    .query<{ m: string | null }, [string]>(
+      "SELECT MAX(last_synced_ts) AS m FROM channels WHERE team_id = ?",
+    )
+    .get(team_id);
+  return row?.m ?? null;
+}

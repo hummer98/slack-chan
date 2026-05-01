@@ -73,4 +73,29 @@ describe("dao/files", () => {
     expect(files.get(db, "T1", "F1")).toBeNull();
     expect(files.get(db, "T2", "F1")).not.toBeNull();
   });
+
+  test("listByMessage returns all files attached to a (team_id, channel_id, ts)", () => {
+    files.upsert(db, makeFile({ file_id: "F1", channel_id: "C1", ts: "1700000000.000100" }));
+    files.upsert(db, makeFile({ file_id: "F2", channel_id: "C1", ts: "1700000000.000100" }));
+    files.upsert(db, makeFile({ file_id: "F3", channel_id: "C1", ts: "1700000000.000200" }));
+    files.upsert(db, makeFile({ file_id: "F4", channel_id: "C2", ts: "1700000000.000100" }));
+    const rows = files.listByMessage(db, "T1", "C1", "1700000000.000100");
+    expect(rows.map((r) => r.file_id).sort()).toEqual(["F1", "F2"]);
+  });
+
+  test("listByMessage returns empty array when nothing matches", () => {
+    expect(files.listByMessage(db, "T1", "C1", "1700000000.000100")).toEqual([]);
+  });
+
+  test("countByTeam returns count and isolates teams", () => {
+    expect(files.countByTeam(db, "T1")).toBe(0);
+
+    files.upsert(db, makeFile({ team_id: "T1", file_id: "F1" }));
+    files.upsert(db, makeFile({ team_id: "T1", file_id: "F2" }));
+    files.upsert(db, makeFile({ team_id: "T2", file_id: "F1" }));
+
+    expect(files.countByTeam(db, "T1")).toBe(2);
+    expect(files.countByTeam(db, "T2")).toBe(1);
+    expect(files.countByTeam(db, "T_other")).toBe(0);
+  });
 });

@@ -90,18 +90,88 @@ Format:
 - Tests live under `tests/`. Place a new test next to the unit it covers (`src/foo/bar.ts` → `tests/foo/bar.test.ts`).
 - Phase 1 does not yet record HTTP fixtures. The current Slack-API tests stub `WebClient.prototype.apiCall` with `spyOn` (see ADR-0003 for why nock is incompatible with Bun today).
 
-### nock fixtures workflow (Phase 5+)
+### Slack fixture recording workflow (Phase 5+)
 
-When fixture-based tests are introduced, **fixtures must be redacted before commit**. Mandatory redaction targets:
+We do **not** intercept HTTP at the network layer. As of bun 1.3.13, nock's
+`InterceptedRequestRouter` cannot reassign `req.path` on Bun's `ClientRequest`
+(see [ADR-0003](./docs/decisions/0003-test-runner.md) Consequences). Instead,
+fixtures are recorded once via the real Slack API and replayed by stubbing
+`WebClient.prototype.apiCall` in tests. The full rationale — including why
+`msw` was also rejected for Phase 5 — lives in
+[ADR-0009](./docs/decisions/0009-fixture-recording-strategy.md).
 
-- Token strings (`xoxp-…`, `xoxb-…`, `xoxa-…`, refresh tokens, OAuth codes)
-- Real email addresses
-- User IDs (`U…`), workspace IDs (`T…`, `E…`), channel IDs (`C…`, `D…`, `G…`)
-- Message text bodies and DM contents
-- File names, file URLs, and attachment metadata
-- Any `Authorization` / `Cookie` / `Set-Cookie` headers
+#### Recording a new fixture
 
-The exact fixture directory layout and redaction helper script will be defined when the Phase 5 recording helper lands; this section will be updated then.
+1. Acquire a real Slack token for the workspace you want to record against —
+   **use a sandbox / personal workspace, never a production one** (no
+   machine-side guard exists; this is enforced by convention).
+2. Run the recorder once:
+
+   ```sh
+   SLACK_CHAN_RECORD=1 bun run record-fixtures -- \
+       --method auth.test --scenario ok --team-id T01ABCDEF
+   ```
+
+   Auth resolution order: `SLACK_CHAN_TEST_TOKEN` + `SLACK_CHAN_TEST_TEAM_ID`
+   env vars (CI / sandbox), then TokenStore lookup by `--team-id`. The
+   recorder writes `tests/fixtures/slack/<method>/<scenario>.json` as a
+   `SlackFixtureRaw` (`redacted: false`).
+
+3. Redact PII / tokens **before the file leaves your machine**:
+
+   ```sh
+   bun run redact-fixtures
+   ```
+
+4. Verify there are no leftover real values:
+
+   ```sh
+   bun run redact-fixtures -- --check    # exit 0 means clean
+   ```
+
+5. Commit the redacted JSON. The fixture is now `redacted: true` and accepted
+   by `replayFixture()`.
+
+#### Mandatory redaction targets
+
+- Slack tokens (`xoxb-`, `xoxp-`, `xoxa-`, `xoxr-`, `xoxs-`, `xapp-`)
+  — collapsed to `xoxb-test-token`.
+- Real email addresses → `user-N@example.test`.
+- User / Team / Channel / DM / Group / Enterprise / File IDs → `U_TEST_NNN`,
+  `T_TEST_NNN`, etc. The N for User IDs and emails is shared per entity so
+  `real_name` / `display_name` / `name` line up with the same person.
+- Message text bodies and DM contents → `redacted-message-N`.
+- File names, URLs, and attachment metadata are touched only via the rules
+  above; `text` keys are replaced wholesale (see caveats below).
+- `Authorization` / `Cookie` / `Set-Cookie` headers — the recorder does not
+  persist headers, enforced by `src/testing/fixture-types.ts`.
+
+#### Known caveats
+
+- **`text` keys are replaced wholesale.** Any object key named exactly `text`
+  is rewritten to `redacted-message-N` regardless of the original value, so
+  short metadata strings (e.g. `block.type === "rich_text"` style markers)
+  are also replaced. This is a deliberate "safe by default" choice —
+  particularly for non-ASCII PII that regex-based redaction would miss. If a
+  fixture genuinely needs the original literal in a `text` field, hand-edit
+  the JSON after `bun run redact-fixtures` and document the override in the
+  test that consumes it.
+- **Slack ID word boundary (`\b`) is ASCII-only.** Forms like
+  `U123ABC456_extra` (underscore-joined) are not redacted because `\b`
+  does not split between two word characters. Slack's normal API responses
+  do not produce this shape, so the gap is accepted for the MVP. If you
+  encounter such a value, hand-edit the fixture before commit.
+
+#### Replaying in tests
+
+Use `replayFixture()` from `src/testing/fixture-replay.ts`. The helper
+throws if the JSON is unredacted, so an accidentally-committed raw fixture
+fails fast. See `tests/slack/auth.replay.test.ts` for a worked example.
+
+The existing `WebClient.prototype.apiCall` `spyOn` pattern in
+`tests/slack/auth.test.ts` and `tests/slack/client.test.ts` remains
+supported — inline stubs are still the right choice for retry / rate-limit
+tests that exercise the axios layer, and for one-off sanity checks.
 
 ## ADR conventions
 

@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import init0001Sql from "./migrations/0001__init.sql" with { type: "text" };
+import init0002Sql from "./migrations/0002__messages_fts_trigram.sql" with { type: "text" };
 
 export interface MigrationFile {
   version: number;
@@ -18,6 +19,12 @@ const STATIC_MIGRATIONS: readonly MigrationFile[] = Object.freeze([
     name: "init",
     filename: "0001__init.sql",
     sql: init0001Sql,
+  },
+  {
+    version: 2,
+    name: "messages_fts_trigram",
+    filename: "0002__messages_fts_trigram.sql",
+    sql: init0002Sql,
   },
 ]);
 
@@ -46,7 +53,13 @@ export function runMigrations(db: Database, opts: { migrationsDir?: string } = {
       db.exec(migration.sql);
       insertVersion.run(migration.version, migration.name, now);
     });
-    apply();
+    if (migration.name === "messages_fts_trigram") {
+      const start = Date.now();
+      apply();
+      console.error(`[slack-chan] FTS rebuild done in ${Date.now() - start} ms`);
+    } else {
+      apply();
+    }
   }
 }
 

@@ -1,0 +1,4 @@
+fts-ja-tokenizer/evaluation.json
+fts-ja-tokenizer/results/
+fts-ja-tokenizer/*.db
+fts-ja-tokenizer/*.db-*

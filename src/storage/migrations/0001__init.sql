@@ -42,7 +42,8 @@ CREATE INDEX idx_messages_fetched ON messages(team_id, channel_id, fetched_at);
 CREATE VIRTUAL TABLE messages_fts USING fts5(
   text,
   content='messages',
-  content_rowid='rowid'
+  content_rowid='rowid',
+  tokenize='trigram case_sensitive 0'
 );
 
 CREATE TRIGGER messages_ai AFTER INSERT ON messages BEGIN

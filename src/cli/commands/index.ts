@@ -1,13 +1,13 @@
-import { apiCmd } from "./api.ts";
+import { apiCmd } from "./api/index.ts";
 import { configCmd } from "./config/index.ts";
-import { dmCmd } from "./dm.ts";
-import { downloadCmd } from "./download.ts";
-import { postCmd } from "./post.ts";
-import { readCmd } from "./read.ts";
-import { searchCmd } from "./search.ts";
-import { statsCmd } from "./stats.ts";
-import { syncCmd } from "./sync.ts";
-import { userCmd } from "./user.ts";
+import { dmCmd } from "./dm/index.ts";
+import { downloadCmd } from "./download/index.ts";
+import { postCmd } from "./post/index.ts";
+import { readCmd } from "./read/index.ts";
+import { searchCmd } from "./search/index.ts";
+import { statsCmd } from "./stats/index.ts";
+import { syncCmd } from "./sync/index.ts";
+import { userCmd } from "./user/index.ts";
 
 export const COMMANDS = Object.freeze({
   config: configCmd,

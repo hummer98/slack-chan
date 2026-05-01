@@ -82,3 +82,128 @@ export function updateEdited(
     "UPDATE messages SET text = ?, edited_ts = ? WHERE team_id = ? AND channel_id = ? AND ts = ?",
   ).run(patch.text, patch.edited_ts, team_id, channel_id, ts);
 }
+
+export function get(
+  db: Database,
+  team_id: string,
+  channel_id: string,
+  ts: string,
+): MessageRow | null {
+  const row = db
+    .query<MessageRow, [string, string, string]>(
+      "SELECT * FROM messages WHERE team_id = ? AND channel_id = ? AND ts = ?",
+    )
+    .get(team_id, channel_id, ts);
+  return row ?? null;
+}
+
+/**
+ * Look up a message by ts when the channel is unknown. Returns up to 2 rows
+ * so the caller can detect cache-side ambiguity (Slack itself never reuses a
+ * ts across channels, but the cache can race during partial syncs).
+ */
+export function getByTs(db: Database, team_id: string, ts: string): MessageRow[] {
+  return db
+    .query<MessageRow, [string, string]>(
+      "SELECT * FROM messages WHERE team_id = ? AND ts = ? LIMIT 2",
+    )
+    .all(team_id, ts);
+}
+
+export function getLatestTs(db: Database, team_id: string, channel_id: string): string | null {
+  const row = db
+    .query<{ ts: string }, [string, string]>(
+      "SELECT ts FROM messages WHERE team_id = ? AND channel_id = ? ORDER BY ts DESC LIMIT 1",
+    )
+    .get(team_id, channel_id);
+  return row ? row.ts : null;
+}
+
+export function getLatestN(
+  db: Database,
+  team_id: string,
+  channel_id: string,
+  n: number,
+): MessageRow[] {
+  return db
+    .query<MessageRow, [string, string, number]>(
+      "SELECT * FROM messages WHERE team_id = ? AND channel_id = ? ORDER BY ts DESC LIMIT ?",
+    )
+    .all(team_id, channel_id, n);
+}
+
+export function getInRange(
+  db: Database,
+  team_id: string,
+  channel_id: string,
+  oldest_ts: string,
+): MessageRow[] {
+  return db
+    .query<MessageRow, [string, string, string]>(
+      "SELECT * FROM messages WHERE team_id = ? AND channel_id = ? AND ts >= ? ORDER BY ts ASC",
+    )
+    .all(team_id, channel_id, oldest_ts);
+}
+
+export interface GetForOutputOptions {
+  limit: number;
+  since_ts: string | null;
+}
+
+export function getForOutput(
+  db: Database,
+  team_id: string,
+  channel_id: string,
+  opts: GetForOutputOptions,
+): MessageRow[] {
+  if (opts.since_ts !== null) {
+    return db
+      .query<MessageRow, [string, string, string, number]>(
+        "SELECT * FROM messages WHERE team_id = ? AND channel_id = ? AND ts >= ? AND deleted = 0 ORDER BY ts DESC LIMIT ?",
+      )
+      .all(team_id, channel_id, opts.since_ts, opts.limit);
+  }
+  return db
+    .query<MessageRow, [string, string, number]>(
+      "SELECT * FROM messages WHERE team_id = ? AND channel_id = ? AND deleted = 0 ORDER BY ts DESC LIMIT ?",
+    )
+    .all(team_id, channel_id, opts.limit);
+}
+
+export function getThread(
+  db: Database,
+  team_id: string,
+  channel_id: string,
+  parent_ts: string,
+): MessageRow[] {
+  return db
+    .query<MessageRow, [string, string, string, string]>(
+      "SELECT * FROM messages WHERE team_id = ? AND channel_id = ? AND (ts = ? OR thread_ts = ?) AND deleted = 0 ORDER BY ts ASC",
+    )
+    .all(team_id, channel_id, parent_ts, parent_ts);
+}
+
+export function countByTeam(
+  db: Database,
+  team_id: string,
+  opts: { includeDeleted?: boolean } = {},
+): number {
+  if (opts.includeDeleted === true) {
+    const row = db
+      .query<{ n: number }, [string]>("SELECT COUNT(*) AS n FROM messages WHERE team_id = ?")
+      .get(team_id);
+    return row?.n ?? 0;
+  }
+  const row = db
+    .query<{ n: number }, [string]>(
+      "SELECT COUNT(*) AS n FROM messages WHERE team_id = ? AND deleted = 0",
+    )
+    .get(team_id);
+  return row?.n ?? 0;
+}
+
+export function markAlive(db: Database, team_id: string, channel_id: string, ts: string): void {
+  db.prepare(
+    "UPDATE messages SET deleted = 0 WHERE team_id = ? AND channel_id = ? AND ts = ? AND deleted = 1",
+  ).run(team_id, channel_id, ts);
+}

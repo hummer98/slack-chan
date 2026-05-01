@@ -4,10 +4,12 @@ import {
   type ConversationsHistoryArguments,
   type ConversationsInfoArguments,
   type ConversationsListArguments,
+  type ConversationsOpenArguments,
   type ConversationsRepliesArguments,
   type FilesUploadV2Arguments,
   type SearchMessagesArguments,
   type UsersInfoArguments,
+  type UsersListArguments,
   type UsersLookupByEmailArguments,
   type WebAPICallResult,
   WebClient,
@@ -71,11 +73,15 @@ export class SlackClient {
 
   conversationsInfo = (args: ConversationsInfoArguments) => this.client.conversations.info(args);
 
+  conversationsOpen = (args: ConversationsOpenArguments) => this.client.conversations.open(args);
+
   chatPostMessage = (args: ChatPostMessageArguments) => this.client.chat.postMessage(args);
 
   filesUploadV2 = (args: FilesUploadV2Arguments) => this.client.filesUploadV2(args);
 
   usersInfo = (args: UsersInfoArguments) => this.client.users.info(args);
+
+  usersList = (args?: UsersListArguments) => this.client.users.list(args ?? {});
 
   usersLookupByEmail = (args: UsersLookupByEmailArguments) => this.client.users.lookupByEmail(args);
 
