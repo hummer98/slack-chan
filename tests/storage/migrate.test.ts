@@ -1,3 +1,7 @@
+// fts-trigram-migration.test.ts の (mig-2) は v1 適用後の既存 cache に対する v2 rebuild
+// シナリオを検証する。本ファイル末尾の「v1 単体適用」テストはそれと役割が異なり、
+// fresh install (新規 cache 作成) の時点で 0001__init.sql 自体が trigram tokenizer で
+// messages_fts を作成することを確認する。
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
@@ -56,16 +60,16 @@ describe("runMigrations", () => {
     expect(triggerNames).toContain("messages_au");
   });
 
-  test("appliedVersions returns Set([1]) after first run", () => {
+  test("appliedVersions returns Set([1, 2]) after first run", () => {
     runMigrations(db);
-    expect(appliedVersions(db)).toEqual(new Set([1]));
+    expect(appliedVersions(db)).toEqual(new Set([1, 2]));
   });
 
   test("is idempotent (running twice does not duplicate schema_versions rows)", () => {
     runMigrations(db);
     runMigrations(db);
     const count = db.query<{ c: number }, []>("SELECT COUNT(*) AS c FROM schema_versions").get();
-    expect(count?.c).toBe(1);
+    expect(count?.c).toBe(2);
   });
 });
 
@@ -77,5 +81,34 @@ describe("loadMigrations", () => {
     expect(list[0]?.name).toBe("init");
     expect(list[0]?.filename).toBe("0001__init.sql");
     expect(list[0]?.sql).toContain("CREATE TABLE workspaces");
+  });
+});
+
+// fresh install シナリオ: 0001__init.sql 単体で trigram tokenizer が適用される。
+// loadMigrations で v1 のみを抜き出して適用し、v2 の rebuild を経由せずに
+// messages_fts が trigram で作られることを確認する。
+describe("0001__init.sql fresh install (trigram tokenizer alignment)", () => {
+  let db: Database;
+
+  beforeEach(() => {
+    db = new Database(":memory:", { create: true });
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  test("v1 alone creates messages_fts with trigram tokenizer", () => {
+    const all = loadMigrations(migrationsDir);
+    const v1 = all.find((m) => m.version === 1);
+    if (!v1) throw new Error("v1 migration not found");
+    db.exec(v1.sql);
+    const row = db
+      .query<{ sql: string }, []>(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='messages_fts'",
+      )
+      .get();
+    expect(row?.sql ?? "").toContain("trigram");
+    expect(row?.sql ?? "").toContain("case_sensitive");
   });
 });
