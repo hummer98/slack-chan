@@ -121,7 +121,13 @@ Slack App を作成して `xoxp-` / `xoxb-` を発行してください。
   `stats`, with cache semantics (incremental fetch + recent-N refetch for
   edits / deletes, on-demand thread replies)。`search` は FTS5 ローカル
   キャッシュと Slack `search.messages` の並列マージ、`api` は generic
-  Slack Web API escape hatch として実装。
+  Slack Web API escape hatch として実装。`search --cached-only` は
+  FTS5 builtin trigram tokenizer で日本語の部分文字列検索に対応する
+  (T025 / ADR-0012)。**初回起動時に `messages_fts` の rebuild が走る**
+  ため、cache に多数の messages を持つユーザは初回のみ数秒〜数十秒
+  待たされる場合がある。3 文字未満のクエリ（例: 1 文字日本語、2 文字
+  ASCII の `OR` 等）は trigram の境界より短いため LIKE fallback で
+  検索する（bm25 ランキングは適用されず、`ts DESC` 順に返却される）。
 - **Phase 4: SKILL.md + recording helper + distribution** — ✅ Completed
   (T019-T022). Claude Code plugin manifest + SKILL.md
   （`hummer98/slack-chan` を single-plugin marketplace 化、ADR-0010、
