@@ -1,7 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { extname, join } from "node:path";
 import { ErrorCode } from "@slack/web-api";
-import { selectFormatter } from "../../../output/format.ts";
 import type { SlackClient } from "../../../slack/client.ts";
 import * as filesDao from "../../../storage/dao/files.ts";
 import * as messagesDao from "../../../storage/dao/messages.ts";
@@ -12,7 +11,7 @@ import type { CommandContext } from "../../router.ts";
 import { type DownloadArgs, parseDownloadArgv } from "./argv.ts";
 import { resolveChannel } from "./channels.ts";
 import { type Effects, type FileStat, resolveDefaultFilesDir } from "./effects.ts";
-import type { DownloadResult } from "./output.ts";
+import { type DownloadResult, renderDownloadResult } from "./output.ts";
 import { loadToken, resolveWorkspace } from "./workspace.ts";
 
 const USER_API_ERRORS: ReadonlySet<string> = new Set([
@@ -484,8 +483,6 @@ export async function handleDownload(ctx: CommandContext, effects: Effects): Pro
     throw new InternalError(`download: mkdir ${baseDir} failed: ${detail}`);
   }
 
-  const formatter = selectFormatter(ctx.format);
-
   for (const row of fileRows) {
     const result = await downloadOne({
       row,
@@ -495,7 +492,7 @@ export async function handleDownload(ctx: CommandContext, effects: Effects): Pro
       db,
       effects,
     });
-    process.stdout.write(formatter.format(result));
+    process.stdout.write(renderDownloadResult(result, ctx.format));
   }
 
   return EXIT_OK;

@@ -31,7 +31,7 @@ Global flags:
   --workspace <T...>   Target workspace team_id (overrides config / env)
   --json               Emit JSONL (default)
   --toon               Emit TOON (currently delegates to JSONL — see ADR-0009)
-  --human              Emit colorized human-readable output
+  --human              Emit human-readable formatting (timeline / table / card; see ADR-0013)
   --verbose            Enable debug-level logging on stderr
   -h, --help           Show this help and exit
   -v, --version        Show version and exit

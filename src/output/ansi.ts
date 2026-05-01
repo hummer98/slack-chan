@@ -20,8 +20,10 @@ export interface ColorFns {
   yellow(s: string): string;
   green(s: string): string;
   cyan(s: string): string;
+  magenta(s: string): string;
   dim(s: string): string;
   bold(s: string): string;
+  yellowBg(s: string): string;
 }
 
 const NOOP: ColorFns = {
@@ -29,8 +31,10 @@ const NOOP: ColorFns = {
   yellow: (s) => s,
   green: (s) => s,
   cyan: (s) => s,
+  magenta: (s) => s,
   dim: (s) => s,
   bold: (s) => s,
+  yellowBg: (s) => s,
 };
 
 const ON: ColorFns = {
@@ -38,8 +42,10 @@ const ON: ColorFns = {
   yellow: (s) => wrap("33", "39", s),
   green: (s) => wrap("32", "39", s),
   cyan: (s) => wrap("36", "39", s),
+  magenta: (s) => wrap("35", "39", s),
   dim: (s) => wrap("2", "22", s),
   bold: (s) => wrap("1", "22", s),
+  yellowBg: (s) => wrap("43", "49", s),
 };
 
 export function makeColors(enabled: boolean): ColorFns {

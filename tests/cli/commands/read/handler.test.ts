@@ -281,13 +281,13 @@ describe("readHandler", () => {
     expect(payloadCalls.length).toBe(0);
   });
 
-  it("(9) --human format: 出力に ANSI escape (dim) が含まれる", async () => {
+  it("(9) --human format: タイムライン整形 (ANSI on)", async () => {
     await saveConfig(baseConfig, { configDir: dir });
     await store.set("T01ABCDEF", "xoxb-test");
     mockApi({
       "conversations.history": async () => ({
         ok: true,
-        messages: [{ ts: "1700000000.000100", text: "x", user: "U1", type: "message" }],
+        messages: [{ ts: "1700000000.000100", text: "hello", user: "U1", type: "message" }],
         response_metadata: { next_cursor: "" },
       }),
     });
@@ -306,13 +306,54 @@ describe("readHandler", () => {
       const code = await readHandler(ctx, makeEffects({ configDir: dir, store, db, stdout }));
       expect(code).toBe(0);
       const out = readBuffer(stdout);
-      // ESC [2m = dim ANSI escape sequence
+      // タイムライン: 本文は ASCII 化された後に出る (`hello` という文字列を含む)
+      expect(out).toContain("hello");
+      // 本文行は 2 space indent
+      expect(out).toMatch(/\n {2}hello/);
+      // JSON pretty 表示（旧仕様）の `"text":` は出ない
+      expect(out).not.toContain('"text":');
+      // タイムスタンプは dim, channel は cyan, user は green で装飾される
       const ESC = String.fromCharCode(0x1b);
-      expect(out.includes(`${ESC}[2m`)).toBe(true);
+      expect(out.includes(`${ESC}[2m`)).toBe(true); // dim (timestamp)
+      expect(out.includes(`${ESC}[36m`)).toBe(true); // cyan (channel)
+      expect(out.includes(`${ESC}[32m`)).toBe(true); // green (user)
     } finally {
       Object.defineProperty(process.stdout, "isTTY", { value: prevTty, configurable: true });
       if (prevNo !== undefined) process.env.NO_COLOR = prevNo;
       if (prevSlackNo !== undefined) process.env.SLACK_CHAN_NO_COLOR = prevSlackNo;
+    }
+  });
+
+  it("(9b) --human format: NO_COLOR 環境では ANSI escape が出ない", async () => {
+    await saveConfig(baseConfig, { configDir: dir });
+    await store.set("T01ABCDEF", "xoxb-test");
+    mockApi({
+      "conversations.history": async () => ({
+        ok: true,
+        messages: [{ ts: "1700000000.000100", text: "hello", user: "U1", type: "message" }],
+        response_metadata: { next_cursor: "" },
+      }),
+    });
+    const prevTty = (process.stdout as { isTTY?: boolean }).isTTY;
+    const prevNo = process.env.NO_COLOR;
+    process.env.NO_COLOR = "1";
+    Object.defineProperty(process.stdout, "isTTY", { value: true, configurable: true });
+    try {
+      const ctx = makeCtx({
+        workspace: "T01ABCDEF",
+        format: "human",
+        rest: ["C12345678"],
+      });
+      const code = await readHandler(ctx, makeEffects({ configDir: dir, store, db, stdout }));
+      expect(code).toBe(0);
+      const out = readBuffer(stdout);
+      const ESC = String.fromCharCode(0x1b);
+      expect(out.includes(`${ESC}[`)).toBe(false);
+      expect(out).toContain("hello");
+    } finally {
+      Object.defineProperty(process.stdout, "isTTY", { value: prevTty, configurable: true });
+      if (prevNo === undefined) delete process.env.NO_COLOR;
+      else process.env.NO_COLOR = prevNo;
     }
   });
 

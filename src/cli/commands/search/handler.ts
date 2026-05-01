@@ -154,7 +154,14 @@ export async function searchHandler(ctx: CommandContext, effects: Effects): Prom
     remote: remote.kind === "ok" ? remote.hits : [],
     limit: args.limit,
   });
-  writeSearchOutput({ merged, format: ctx.format, stdout: effects.stdout });
+  writeSearchOutput({
+    merged,
+    format: ctx.format,
+    stdout: effects.stdout,
+    query: args.query,
+    team_id,
+    db,
+  });
 
   return EXIT_OK;
 }

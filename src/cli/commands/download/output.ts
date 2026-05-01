@@ -1,3 +1,8 @@
+import type { OutputFormat } from "../../../config/types.ts";
+import { type ColorFns, isColorEnabled, makeColors } from "../../../output/ansi.ts";
+import { selectFormatter } from "../../../output/format.ts";
+import { humanBytes } from "../../../output/human/index.ts";
+
 /**
  * Per-file record emitted on stdout when `download` succeeds. Always
  * `ok: true` — any failure is converted to a `CliError` upstream and the
@@ -19,4 +24,33 @@ export interface DownloadResult {
   skipped: boolean;
   size_bytes?: number;
   mimetype?: string;
+}
+
+interface RenderDownloadOpts {
+  isTTY?: boolean;
+}
+
+export function renderDownloadResult(
+  result: DownloadResult,
+  format: OutputFormat,
+  opts: RenderDownloadOpts = {},
+): string {
+  if (format !== "human") {
+    return selectFormatter(format).format(result);
+  }
+  const colors = makeColors(opts.isTTY === undefined ? isColorEnabled() : opts.isTTY);
+  return renderDownloadResultHuman(result, colors);
+}
+
+export function renderDownloadResultHuman(result: DownloadResult, colors: ColorFns): string {
+  const sizePart =
+    typeof result.size_bytes === "number" ? ` (${humanBytes(result.size_bytes)})` : "";
+  const nameLabel =
+    result.name !== undefined ? `${result.file_id} (${result.name})` : result.file_id;
+  if (result.skipped) {
+    const marker = colors.dim("↺ skipped:");
+    return `${marker} ${nameLabel} → ${result.local_path}${sizePart}\n`;
+  }
+  const marker = colors.green("✓");
+  return `${marker} ${nameLabel} → ${result.local_path}${sizePart}\n`;
 }

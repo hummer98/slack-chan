@@ -372,7 +372,7 @@ describe("handleUser", () => {
     }
   });
 
-  it("(14) format = human → JSON.stringify 整形済が出る (HumanFormatter は dim ANSI 付き JSON)", async () => {
+  it("(14) format = human → プロフィールカード形式で出る", async () => {
     const db = trackDb(openDatabase({ path: ":memory:" }));
     const { effects } = makeEffects({
       db,
@@ -383,8 +383,12 @@ describe("handleUser", () => {
     });
     const code = await handleUser(makeCtx({ format: "human", rest: ["U01ABCDEF"] }), effects);
     expect(code).toBe(0);
-    expect(stdout()).toContain('"user_id"');
-    expect(stdout()).toContain("U01ABCDEF");
+    const out = stdout();
+    expect(out).toContain("@alice  (U01ABCDEF)");
+    expect(out).toContain("Real name");
+    expect(out).toContain("Email");
+    // 旧仕様 (pretty JSON) の `"user_id":` は出ない
+    expect(out).not.toContain('"user_id":');
   });
 
   // ---------- @name 経路 ----------

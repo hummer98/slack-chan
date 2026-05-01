@@ -98,7 +98,7 @@ describe("config workspace list", () => {
     expect(parsed.token).not.toContain("test-1234");
   });
 
-  it("(3) human format with color-disabled isTTY=false output is plain text", async () => {
+  it("(3) human format: 表整形 (header + ─ separator + 行)", async () => {
     const cfg: Config = {
       default_workspace: null,
       workspaces: {
@@ -115,8 +115,19 @@ describe("config workspace list", () => {
     );
     expect(code).toBe(0);
     const text = out();
-    expect(text).toContain("T01ABCDEF");
-    expect(text).toContain("Acme");
+    const lines = text.split("\n");
+    expect(lines[0]).toContain("TEAM_ID");
+    expect(lines[0]).toContain("NAME");
+    expect(lines[0]).toContain("DEFAULT_CHANNEL");
+    expect(lines[0]).toContain("TOKENS_STORE");
+    expect(lines[0]).toContain("TOKEN");
+    expect(lines[1]).toMatch(/^─+/);
+    expect(lines[2]).toContain("T01ABCDEF");
+    expect(lines[2]).toContain("Acme");
+    expect(lines[2]).toContain("C1");
+    expect(lines[2]).toContain("file");
+    // 旧仕様 (`tokens_store    =`) は出ない
+    expect(text).not.toContain("tokens_store    =");
   });
 
   it("(4) workspace without a stored token → token: null", async () => {
