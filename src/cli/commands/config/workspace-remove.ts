@@ -38,6 +38,7 @@ export async function workspaceRemoveHandler(
   const ok = await promptYesNo({
     question: `Remove workspace ${team_id}? This deletes all cached messages, channels, users, and files for this team.`,
     yes: values.yes === true,
+    isTTY: effects.isTTY(),
   });
   if (!ok) {
     ctx.logger.info("aborted");
