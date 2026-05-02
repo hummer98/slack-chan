@@ -8,13 +8,12 @@ local cache. Designed to be invoked by Claude Code via a Bash skill so the
 agent can read context from Slack and post reports back without manual
 plumbing.
 
-> **Status: Phases 1–4 implemented; pre-`0.1.0`.** Phase 1–4 tasks
-> (scaffolding & CI, SQLite cache, auth & config, all Slack feature
-> commands, SKILL.md plugin, release & Homebrew pipelines) are complete
-> and the CLI is locally usable via `bun run build:bin`. The first public
-> release (`0.1.0` tag → `npm publish` → GitHub Release) and Anthropic
-> official marketplace submission are still pending — see
-> [Roadmap § Phase 5+](#roadmap).
+> **Status: `0.1.0` released.** Phases 1–4 (scaffolding & CI, SQLite cache,
+> auth & config, all Slack feature commands, SKILL.md plugin, release &
+> Homebrew pipelines, postinstall-driven Claude plugin distribution) are
+> complete. `npm i -g @hummer98/slack-chan` で CLI と Claude Code skill が
+> 両方使えます。Anthropic 公式 marketplace への submission は引き続き計画中
+> — see [Roadmap § Phase 5+](#roadmap).
 
 ## Quick start
 
