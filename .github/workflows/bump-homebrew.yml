@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout slack-chan
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Resolve tag / version / mode
         id: ctx
@@ -148,7 +148,7 @@ jobs:
         # fixture モード時は tap repo が無くても続行できるよう continue-on-error。
         # 本番 (release-published / 明示 tag) は失敗させて気づけるようにする。
         continue-on-error: ${{ steps.ctx.outputs.fixture_mode == 'true' }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: hummer98/homebrew-tap
           path: homebrew-tap
@@ -194,7 +194,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.ctx.outputs.is_dry != 'true' && steps.checkout_tap.outcome == 'success'
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           path: homebrew-tap
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
